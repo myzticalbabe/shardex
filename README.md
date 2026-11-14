@@ -1,37 +1,70 @@
-# SHARDEX
+# shardex
 
-Shard tooling: build a shard, render its mesh, and check the result rather than
-trusting a digest that was written by the same code that wrote the file.
+SHARDEX — shard execution engine extracted from AZAZAEL.
 
-The full documentation lives in **[SHARDEX.md](SHARDEX.md)**; this file exists so
-that a repository page has something to render.
+[![CI](https://github.com/myzticalbabe/shardex/actions/workflows/ci.yml/badge.svg)](https://github.com/myzticalbabe/shardex/actions/workflows/ci.yml)
+[![Pages Deploy](https://github.com/myzticalbabe/shardex/actions/workflows/pages-deploy.yml/badge.svg)](https://github.com/myzticalbabe/shardex/actions/workflows/pages-deploy.yml)
+[![License: SOUL FORGE](https://img.shields.io/badge/License-SOUL_FORGE-violet.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/myzticalbabe/shardex)](https://github.com/myzticalbabe/shardex/releases)
+[![GitHub stars](https://img.shields.io/github/stars/myzticalbabe/shardex?style=social)](https://github.com/myzticalbabe/shardex/stargazers)
 
-## What ships here
+---
 
-| command | module | what it does |
-|---|---|---|
-| `shardex` | `shardex.py` | builds and inspects a shard |
-| `shardex-mesh` | `meshscene.py` | renders the mesh scene for a shard |
-| `shardex-transubstantiate` | `transubstantiate.py` | converts between shard representations |
+## Overview
 
-`ops.py` ships as a module because `meshscene.py` imports it directly; omitting it
-would break all three commands at import time.
+Shard registry, execution pipelines, dependency resolution.
 
-## Requirements beyond pip
-
-The mesh renderer drives a browser, so it needs **Node with puppeteer and a Chrome
-install**. That cannot be expressed in `dependencies`, and claiming an empty
-dependency set while silently requiring a browser is the kind of metadata lie this
-tree has already been burned by. The Python side is standard library only.
-
-## Quickstart
+## Installation
 
 ```bash
-pip install .
-shardex --help
+pip install -e .
 ```
+
+## Usage
+
+python -m shardex --help
+
+## Architecture
+
+See [Domain Atlas](https://myzticalbabe.github.io) for interactive visualization.
 
 ## License
 
-CDDL-1.1. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
-License ruling: commit b49dfc2fef0178d1984437de577bfa00de8a4c32 (2026-11-03); see docs/LICENSE_PRECEDENT_CDDL11_2026-11-03.md.
+This project is licensed under the **SOUL FORGE License v1.0** — see [LICENSE](LICENSE) for details.
+
+> *"Code is crystallized intention. Tend the fire."*
+
+## Related Repositories
+
+| Repo | Description |
+|------|-------------|
+| [azazael](https://github.com/myzticalbabe/azazael) | Monorepo: worm registry, cluster system, agent harness |
+| [EveUnleashed](https://github.com/myzticalbabe/EveUnleashed) | Gamora, Lucy, Jaeger, Berzerker AIO native on 3.16t |
+| [eliza](https://github.com/myzticalbabe/eliza) | Companion runtime: shards, adopted trees |
+| [codex-video-engine](https://github.com/myzticalbabe/codex-video-engine) | CODEX Studio desktop app + video engine |
+| [ecosystem-orchestrator](https://github.com/myzticalbabe/ecosystem-orchestrator) | ML platform install/orchestration |
+| [scribe](https://github.com/myzticalbabe/scribe) | Documentation generation |
+| [persephone-sync](https://github.com/myzticalbabe/persephone-sync) | Cross-platform env sync |
+| [hydra-mlcluster](https://github.com/myzticalbabe/hydra-mlcluster) | Adaptive ML cluster processing |
+| [flaming-sword](https://github.com/myzticalbabe/flaming-sword) | Defensive instrument: sentinel, compliance, formal verification |
+| [shardex](https://github.com/myzticalbabe/shardex) | Shard execution engine |
+| [krampus](https://github.com/myzticalbabe/krampus) | Composition: MellifluousML, Madi, Gamora, Eve, Lilith |
+| [azazael-core](https://github.com/myzticalbabe/azazael-core) | Installable, interpreter-agnostic repackaging |
+| [grantforge](https://github.com/myzticalbabe/grantforge) | AI-native grant tooling |
+| [madi](https://github.com/myzticalbabe/madi) | Browsing instrument: fetch, challenge taxonomy, scorer |
+| [jaeger](https://github.com/myzticalbabe/jaeger) | Durable spans, JSONL ledger, stdlib only |
+| [cradle](https://github.com/myzticalbabe/cradle) | Composition over FLAMING SWORD, REAPER, GRIMOIRE |
+| [esquire-admissibility](https://github.com/myzticalbabe/esquire-admissibility) | AI-evidence admissibility gates |
+| [nurse-ratchet](https://github.com/myzticalbabe/nurse-ratchet) | Behavioural package: person state modelled |
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Links
+
+- **Monorepo**: https://github.com/myzticalbabe/azazael
+- **Landing Hub**: https://myzticalbabe.github.io
+- **Domain Atlas**: https://myzticalbabe.github.io/index.html
+- **Issues**: https://github.com/myzticalbabe/shardex/issues
+- **Discussions**: https://github.com/myzticalbabe/shardex/discussions
