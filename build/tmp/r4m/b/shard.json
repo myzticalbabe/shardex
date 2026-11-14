@@ -1,0 +1,110 @@
+{
+ "id": "lowend-arena@sha256:ae1bfccbb68e8125c3267406369bbfc46ffea63bb17278eba980696b24a181da",
+ "version": "0.1.0",
+ "genre": "arena",
+ "tier": "lowend",
+ "sim_hz": 60,
+ "files": [
+  {
+   "path": "main.py",
+   "sha256": "aa2b5a1687fdbb8299f28425765a5335f6074cdec003628ca8e932ed3d3e393e",
+   "role": "code",
+   "size_bytes": 15486
+  },
+  {
+   "path": "SHARD.md",
+   "sha256": "f9c3855ab0a0aca42c2787f84162308e260164822618c43c1c4e93abe7124026",
+   "role": "data",
+   "size_bytes": 3749
+  }
+ ],
+ "entrypoint": "main.py",
+ "loader": "native",
+ "golden_run": {
+  "input": "000102030405060708090a0b0c0d0e0f",
+  "ticks": 3600,
+  "state_sha256": "db5cee352d4a39cebbdcd53a27a8dabf5721c22df7e13b72211e2587af933634",
+  "token": "AZAZAEL-LOWEND-OK",
+  "headless": true
+ },
+ "capabilities": [
+  {
+   "id": "720p-render",
+   "affects": "presentation",
+   "determinism": "exact",
+   "note": "1280x720 frame generated via Pillow; --headless changes nothing in hash"
+  },
+  {
+   "id": "integer-sim",
+   "affects": "sim",
+   "determinism": "exact",
+   "note": "positions, velocities, hit tests all integer; no float in authoritative state"
+  },
+  {
+   "id": "procedural-sprites",
+   "affects": "presentation",
+   "determinism": "exact",
+   "note": "player/projectile/obstacle sprites generated at runtime via Pillow; no external assets"
+  },
+  {
+   "id": "procedural-audio",
+   "affects": "presentation",
+   "determinism": "exact",
+   "note": "PCM tones generated at runtime via math.sin; no external audio files"
+  },
+  {
+   "id": "single-level",
+   "affects": "sim",
+   "determinism": "exact",
+   "note": "one arena with 5 static obstacles encoded in shard; no external level data"
+  },
+  {
+   "id": "deterministic-input",
+   "affects": "sim",
+   "determinism": "exact",
+   "note": "fixed hex input log decoded by branchless rule; no clock, no ambient randomness"
+  },
+  {
+   "id": "canonical-hash",
+   "affects": "sim",
+   "determinism": "exact",
+   "note": "sha256 over hand-written canonical string; dict/set order never used"
+  }
+ ],
+ "hubs": [],
+ "budget": {
+  "payload_bytes_max": 2097152,
+  "tick_budget_ms": {
+   "p50": 0.5,
+   "p99": 1.0,
+   "scene": "2-player 720p arena, py3.15t author box (to be re-based)"
+  }
+ },
+ "licence": "MIT",
+ "author_pubkey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+ "execution_model": "resident_host",
+ "env_allowlist": [],
+ "tick_budget": {
+  "p50_ms": 0.5,
+  "p99_ms": 1.0,
+  "scene": "2-player 720p arena, py3.15t author box (to be re-based)"
+ },
+ "competitive": false,
+ "provenance": [],
+ "shardex": {
+  "forged": true,
+  "state": "FORGED",
+  "flame": ".git\\shx\\forge_main",
+  "tunables": {
+   "screen_w": 1280,
+   "screen_h": 720,
+   "arena_w": 1200,
+   "arena_h": 680,
+   "player_radius": 16,
+   "projectile_radius": 4,
+   "tick_hz": 60,
+   "max_hp": 100,
+   "damage": 10
+  }
+ }
+}

@@ -1,0 +1,9 @@
+[
+  "tests/test_flame_engine.py::test_acceleration_is_the_same_simulation_sooner",
+  "tests/test_flame_engine.py::test_cli_json_is_machine_readable",
+  "tests/test_flame_engine.py::test_cli_verify_exits_zero_and_says_verified",
+  "tests/test_flame_engine.py::test_every_tick_is_served_exactly_once",
+  "tests/test_flame_engine.py::test_selftest_passes",
+  "tests/test_flame_engine.py::test_slicing_invariance",
+  "tests/test_flame_engine.py::test_the_60hz_assumption_is_caught"
+]

@@ -1,0 +1,90 @@
+{
+  "bracket_id": "bracket-1793663818",
+  "format": "single-elimination",
+  "entries": [
+    {
+      "shard_id": "highend-duel@sha256:ea100737aa98196ecd0430bf56bbb1fb17d21d3db2134f9af3cfc49d678e3e14",
+      "shard_path": "..\\docs\\METTHEW\\reference-shards\\highend_duel",
+      "config": {
+        "sim_hz": 60,
+        "gravity": 18.0,
+        "speed": 6.0,
+        "jump": 7.0,
+        "arena": 8.0,
+        "orbs": 3,
+        "difficulty": 1.0,
+        "seed": 3512582836
+      },
+      "golden_hash": "",
+      "seed": 3512582836,
+      "content_sha256": "d15dc2b4fdffdb1d508d97008900d2021c2f9b76637de384e47754c19a5caa79",
+      "artifact_mismatches": []
+    },
+    {
+      "shard_id": "highend-ladder@sha256:6dd0485d35f76a8a0f15ed0eefc036091230fd5f4e972fdc9bf7ba9bf40ce920",
+      "shard_path": "..\\docs\\METTHEW\\reference-shards\\highend_ladder",
+      "config": {
+        "sim_hz": 60,
+        "gravity": 18.0,
+        "speed": 6.0,
+        "jump": 7.0,
+        "arena": 8.0,
+        "orbs": 3,
+        "difficulty": 1.0,
+        "seed": 245048625
+      },
+      "golden_hash": "",
+      "seed": 245048625,
+      "content_sha256": "0e9b25314cd55eda49c45437f3aac2786f4dd5344a4a6dc28e036970d1118c5e",
+      "artifact_mismatches": []
+    }
+  ],
+  "rounds": [
+    {
+      "round_num": 0,
+      "entries": [
+        {
+          "shard_id": "highend-duel@sha256:ea100737aa98196ecd0430bf56bbb1fb17d21d3db2134f9af3cfc49d678e3e14",
+          "shard_path": "..\\docs\\METTHEW\\reference-shards\\highend_duel",
+          "config": {
+            "sim_hz": 60,
+            "gravity": 18.0,
+            "speed": 6.0,
+            "jump": 7.0,
+            "arena": 8.0,
+            "orbs": 3,
+            "difficulty": 1.0,
+            "seed": 3512582836
+          },
+          "golden_hash": "",
+          "seed": 3512582836,
+          "content_sha256": "d15dc2b4fdffdb1d508d97008900d2021c2f9b76637de384e47754c19a5caa79",
+          "artifact_mismatches": []
+        },
+        {
+          "shard_id": "highend-ladder@sha256:6dd0485d35f76a8a0f15ed0eefc036091230fd5f4e972fdc9bf7ba9bf40ce920",
+          "shard_path": "..\\docs\\METTHEW\\reference-shards\\highend_ladder",
+          "config": {
+            "sim_hz": 60,
+            "gravity": 18.0,
+            "speed": 6.0,
+            "jump": 7.0,
+            "arena": 8.0,
+            "orbs": 3,
+            "difficulty": 1.0,
+            "seed": 245048625
+          },
+          "golden_hash": "",
+          "seed": 245048625,
+          "content_sha256": "0e9b25314cd55eda49c45437f3aac2786f4dd5344a4a6dc28e036970d1118c5e",
+          "artifact_mismatches": []
+        }
+      ],
+      "results": [],
+      "started_at": "",
+      "completed_at": ""
+    }
+  ],
+  "status": "created",
+  "created_at": "2026-11-02T23:56:58Z"
+}

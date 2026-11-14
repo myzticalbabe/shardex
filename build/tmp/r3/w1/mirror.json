@@ -1,0 +1,105 @@
+{
+ "state": "MIRRORED",
+ "source": "..\\gateway-go",
+ "source_root": "C:\\Azazael\\azazael\\gateway-go",
+ "mirrored_at_sha256": "2f71ec1184f87c38ecba9bbfa0f69e7e9c0004c48e70cd852e558d91568d0fd3",
+ "totals": {
+  "files": 11,
+  "bytes": 25077,
+  "code": 1,
+  "asset": 0,
+  "data": 10,
+  "by_kind": {
+   "data": 5,
+   "go": 1,
+   "other": 5
+  }
+ },
+ "skipped": [],
+ "pruned": [],
+ "not_mirrored": {
+  "dirs": 0,
+  "files": 0,
+  "bytes": 0,
+  "unreadable": 0
+ },
+ "files": [
+  {
+   "path": "go.mod",
+   "sha256": "85f720cae04724ff5e807714c1b9cbd58344c9615a0b43eaae9d49cd9ed4c913",
+   "size_bytes": 32,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "main.go",
+   "sha256": "bf39109121a96f0c75ef02374ab7f9d0893c5fc22c8441898b97ce0af5893a98",
+   "size_bytes": 5821,
+   "role": "code",
+   "kind": "go"
+  },
+  {
+   "path": "graphify-out/.graphify_labels.json",
+   "sha256": "f1b9250482e6405868b04f1ffb05f8fd6a304e14c74c279708fe6567668b299a",
+   "size_bytes": 27,
+   "role": "data",
+   "kind": "data"
+  },
+  {
+   "path": "graphify-out/.graphify_labels.json.sig",
+   "sha256": "9d67702a89769349c1f003092685262f31ec573cf37c0700e74ed779ae021e68",
+   "size_bytes": 25,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "graphify-out/.graphify_root",
+   "sha256": "cdb4ee2aea69cc6a83331bbe96dc2caa9a299d21329efb0336fc02a82e1839a8",
+   "size_bytes": 1,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "graphify-out/GRAPH_REPORT.md",
+   "sha256": "b067639fa207f95fd814da48e727758e0a9fa4fa83112c49eeb00f0a271c80f3",
+   "size_bytes": 1430,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "graphify-out/graph.html",
+   "sha256": "be7a2ed58f82f3e36431e850ed84ece614e8a7a547ad57a10f693d5b02ee00ec",
+   "size_bytes": 16475,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "graphify-out/graph.json",
+   "sha256": "7c9c36d4f8d33735168411b6557568ee0712a42742cbd9d3cbe1840e7a91606e",
+   "size_bytes": 528,
+   "role": "data",
+   "kind": "data"
+  },
+  {
+   "path": "graphify-out/manifest.json",
+   "sha256": "4e5ad0fb5ca9689597ad024a9fa63fb3e5066e66bf78b67018a8118bbb8fc060",
+   "size_bytes": 169,
+   "role": "data",
+   "kind": "data"
+  },
+  {
+   "path": "graphify-out/cache/stat-index.json",
+   "sha256": "fffc2a1c55b345760d7fa194d8e97667a624e64b7d21c1786a1320e39a4626fb",
+   "size_bytes": 387,
+   "role": "data",
+   "kind": "data"
+  },
+  {
+   "path": "graphify-out/cache/ast/v0.9.72-s4/9fa48cb77324d05ccf6042f99fee4827c22eec2f3d03ba5277855011613a02ad.json",
+   "sha256": "9e696f4b5afa841c2009d501958eb3c6a63db0549dc337a25f82d97e3c5036b6",
+   "size_bytes": 182,
+   "role": "data",
+   "kind": "data"
+  }
+ ]
+}

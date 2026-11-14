@@ -1,0 +1,21 @@
+{
+ "shape": "mesh-live-v1",
+ "mesh_digest": "226d539422b9202a",
+ "fit": {
+  "cx": 190.5,
+  "cy": 27.0,
+  "cz": 12.6431,
+  "scale": 2.1354
+ },
+ "total": 12000,
+ "orbit": 720,
+ "states": {
+  "t3000": "2a1a72985a1d8d1a",
+  "t6000": "64b0318cd77242d2",
+  "t9000": "c00577a226a9f964"
+ },
+ "counts": {
+  "neurons": 1728,
+  "synapses": 3417
+ }
+}

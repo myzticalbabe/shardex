@@ -1,0 +1,5 @@
+{"seq":0,"op":{"kind":"warp","amp":3,"freq":1,"phase":0,"note":"displace neurons from the Q15 table"},"digest":"51fdace00bdd1bfe","neurons":576,"synapses":1201}
+{"seq":1,"op":{"kind":"extrude","gain":3,"note":"relief becomes volume"},"digest":"9c89b09f0553e46d","neurons":576,"synapses":1201}
+{"seq":2,"op":{"kind":"palette","shift":120,"note":"rotate hue by 120 degrees"},"digest":"b799871e7759a070","neurons":576,"synapses":1201}
+{"seq":3,"op":{"kind":"sprout","n":300,"min_gap":4,"note":"link unlinked neuron pairs"},"digest":"a37949c2ead7f094","neurons":576,"synapses":1501}
+{"seq":4,"op":{"kind":"prune","threshold":0.6,"note":"drop weak synapses, keep the skeleton"},"digest":"1894f7d8c9908126","neurons":576,"synapses":1108}

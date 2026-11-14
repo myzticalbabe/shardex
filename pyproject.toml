@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shardex"
+version = "0.1.0"
+description = "Mirror a codebase, shatter it into content-addressed shards, forge a shard into a FLAME arena."
+# There is no README.md in this tree: the document is SHARDEX.md.
+readme = "SHARDEX.md"
+requires-python = ">=3.10"
+license = { text = "CDDL-1.1" }
+# No Python runtime dependencies: the Python side is stdlib-only.
+#
+# Three non-pip dependencies are real and not expressible here:
+#   * Node + puppeteer + Chrome, needed by the L2/L3 forge pipeline;
+#   * two harness scripts now live in this project's tools/ directory;
+#   * the docstring USAGE block calls `python Project_SHARDEX/shardex.py ...` -- that
+#     prefix is a monorepo convention with no meaning in a standalone clone.
+# The L0/L1 paths (mirror, shatter) are pure Python and work from a wheel.
+dependencies = []
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Games/Entertainment",
+  "Topic :: Software Development :: Build Tools",
+]
+# Author identity is deliberately absent, matching the sibling projects.
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+shardex = "shardex:main"
+shardex-mesh = "meshscene:main"
+shardex-transubstantiate = "transubstantiate:main"
+
+[project.urls]
+# No repository URL: the public repository does not exist yet.
+
+[tool.setuptools]
+# All four modules sit at the project root. ops.py has no __main__ (it is the shared
+# library), but it MUST be listed: meshscene.py:47 does a bare `import ops as OPS`,
+# so omitting it makes all three CLIs ImportError at install.
+py-modules = ["shardex", "meshscene", "transubstantiate", "ops"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

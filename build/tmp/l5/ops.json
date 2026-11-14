@@ -1,0 +1,7 @@
+[
+ {"kind":"warp","amp":3.0,"freq":1.0,"phase":0},
+ {"kind":"extrude","gain":3.0},
+ {"kind":"palette","shift":120},
+ {"kind":"sprout","n":300,"min_gap":2},
+ {"kind":"prune","threshold":0.6}
+]

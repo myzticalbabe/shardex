@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=1920, initial-scale=1"/>
+<title>Yggdrasil Cleave — 10 Trees Off One Trunk</title>
+<style>
+  /* Local fonts only: no @import, no CDN. Both families are installed on the
+     capture host (Segoe UI, Cascadia Mono); the stacks are explicit so a host
+     without them falls back predictably instead of silently reflowing. */
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1920px;height:1080px;background:#060b18;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif}
+  #stage{position:absolute;inset:0}
+  canvas{position:absolute;inset:0}
+  .hud{position:absolute;top:44px;left:0;right:0;text-align:center;z-index:5;pointer-events:none}
+  .kicker{display:inline-block;letter-spacing:.35em;font-size:15px;color:#7df9ff;border:1px solid #7df9ff55;padding:9px 22px;border-radius:999px;background:#00e5ff11;margin-bottom:16px}
+  h1{font-size:64px;font-weight:700;background:linear-gradient(92deg,#fff 10%,#7df9ff 45%,#ffd479 80%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{margin-top:10px;font-size:21px;color:#aeb9d6}
+  .caption{position:absolute;bottom:6px;left:0;right:0;text-align:center;z-index:5;font-family:'Cascadia Mono',Consolas,monospace;font-size:16px;color:#8b96b3;pointer-events:none}
+  .caption b{color:#ffd479}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="tree" width="1920" height="1080"></canvas></div>
+<div class="hud"><div class="kicker">AZAZAEL • THE YGGDRASIL CLEAVE</div><h1>10 Trees Off One Trunk — Zero Loss</h1><div class="sub">stdlib + numpy core stays rooted • every branch leaves with a shim • one producer at a time</div></div>
+<div class="caption" id="cap">growing the trunk… <b>azazael-core</b></div>
+<script>
+// Deterministic pilot: draw(p) is a pure function of milliseconds.
+// Capture driver calls window.__step(t) per frame (see the virtual clock below);
+// the clip therefore cannot inherit vsync timing or machine load.
+const cv=document.getElementById('tree'),ctx=cv.getContext('2d');
+const cap=document.getElementById('cap');
+// Offscreen geometry layer + a 1/4-scale copy used as the bloom source.
+const layer=document.createElement('canvas'); layer.width=1920; layer.height=1080;
+const lc=layer.getContext('2d');
+const glow=document.createElement('canvas'); glow.width=480; glow.height=270;
+const gc=glow.getContext('2d');
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=mulberry32(20261028);
+// 10 limbs: [label, side(-1 left / 1 right), spread, hue, src path]
+const LIMBS=[["worms",-1,.34,"#7df9ff","CORE/WORMS"],["orchestration",1,.30,"#7df9ff","ORCHESTRATION"],["codex",-1,.52,"#00ffa3","CODEX"],["cli",1,.55,"#00ffa3","CLI"],["tools",-1,.70,"#ffd479","TOOLS"],["klink",1,.72,"#ffd479","UTILITIES/KLINK"],["persephone",-1,.88,"#ff7ad9","UTILITIES/PERSEPHONE"],["poindexter",1,.86,"#ff7ad9","UTILITIES/POINDEXTER"],["tarbaby",-1,1.04,"#c4b5fd","UTILITIES/TARBABY"],["terence",1,1.02,"#c4b5fd","UTILITIES/TERENCE"]];
+const T0=performance.now(),GROW=30000,LABEL=8000,HOLD=7000,TOTAL=GROW+LABEL+HOLD;
+const MONO="'Cascadia Mono',Consolas,monospace";
+// Alpha is baked into the colour string, never set via ctx.globalAlpha: on a
+// 1920x1080 canvas Chrome composites the whole surface whenever globalAlpha
+// changes, which measured 12+ s per frame for 10.5k segments. An rgba()
+// strokeStyle costs nothing (46 ms per frame at the same segment count).
+function rgba(hex,a){const n=parseInt(hex.slice(1),16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+window.__TOTAL=TOTAL; window.__done=false;
+// Virtual clock. The rAF loop below always runs (a headless page with no
+// animation never commits a frame, so captureScreenshot waits forever — that
+// is what stalled the first deterministic attempt). The driver calls
+// window.__step(ms): it pins the clock to ms and resolves after two painted
+// frames, so the screenshot is deterministic AND the compositor is awake.
+let VCLOCK=null;
+// No full-screen #fade overlay: a 1920x1080 div at z-index 10 makes
+// Page.captureScreenshot wait forever in headless 'new', which is why the first
+// deterministic capture attempt hung. The body background already is #060b18.
+const segs=[]; // {x0,y0,x1,y1,w,hue,depth,t0,t1,label?}
+// Draw-order buckets; see the alpha note in renderLayer().
+let SEG_SOLID=[], SEG_THIN=[], SEG_LEAF=[];
+const limbs=LIMBS.map(L=>({name:L[0],src:L[4],hue:L[3],side:L[1],ox:0,oy:0,tx:0,ty:0,far:-1}));
+// Farthest point of a limb's own fractal is its tip: the label goes there, not
+// on the first segment (which put all ten names in a 354x129px pile).
+function note(l,x,y){ if(!l) return; const d=(x-l.ox)**2+(y-l.oy)**2; if(d>l.far){l.far=d;l.tx=x;l.ty=y;} }
+// build static geometry first (recursive fractal), animate reveal by time
+function branch(x,y,ang,len,w,depth,hue,label,limb){
+  const x1=x+Math.cos(ang)*len,y1=y+Math.sin(ang)*len;
+  segs.push({x0:x,y0:y,x1:x1,y1:y1,w:w,hue:hue,depth:depth,label:label||null});
+  note(limb,x1,y1);
+  if(depth<=0||len<9){
+    // leaf cluster
+    for(let i=0;i<3;i++){const lx=x1+(R()-.5)*26,ly=y1+(R()-.5)*26;
+      segs.push({x0:x1,y0:y1,x1:lx,y1:ly,w:1.5,hue:hue,depth:-1,leaf:true});note(limb,lx,ly);}
+    return;
+  }
+  const n=depth>6?2:(R()<.82?2:3);
+  for(let i=0;i<n;i++){
+    const na=ang+(R()-.5)*(depth>5?.5:.9)+(i-(n-1)/2)*.38;
+    branch(x1,y1,na,len*(.68+R()*.12),w*.66,depth-1,hue,null,limb);
+  }
+}
+(function build(){
+  // trunk
+  branch(960,1080,-Math.PI/2,150,26,4,"#8a6b3d",null,null);
+  // 10 limbs from upper trunk
+  LIMBS.forEach((L,i)=>{
+    const bx=960+L[1]*(20+i*4), by=1080-150-(i%3)*40;
+    const limb=limbs[i]; limb.ox=bx; limb.oy=by;
+    branch(bx,by,-Math.PI/2+L[1]*L[2],120+R()*30,13,7,L[3],L[0],limb);
+  });
+  SEG_SOLID=segs.filter(s=>!s.leaf&&s.depth>0).map(s=>({...s,col:rgba(s.hue,.95)}));
+  SEG_THIN =segs.filter(s=>!s.leaf&&s.depth<=0).map(s=>({...s,col:rgba(s.hue,.85)}));
+  SEG_LEAF =segs.filter(s=>s.leaf).map(s=>({...s,colf:rgba(s.hue,.33)}));
+})();
+// Labels are set outside the limb, on the side the limb grows toward, so the
+// two sides radiate away from the trunk instead of stacking over it.
+function labelBox(l){
+  ctx.font=`700 24px ${MONO}`;
+  const w=ctx.measureText(l.name).width;
+  const right=l.side<0;                       // left-growing limb: text to its left
+  const ax=right?Math.max(150,l.tx-14):Math.min(1770,l.tx+14);
+  const y=Math.max(70,Math.min(1010,l.ty-16));
+  const x0=right?ax-w:ax, x1=right?ax:ax+w;
+  return {name:l.name,x:ax,y,align:right?'right':'left',x0,x1,y0:y-22,y1:y+6,width:w};
+}
+// Static placement with a collision resolver: nudge down in 26px steps until the
+// box clears everything already placed, then clamp. Ten labels therefore never
+// overlap by construction, and __labels() reports the result the page actually
+// draws rather than a prediction of it.
+let LBOXES=null;
+function boxes(){
+  if(LBOXES) return LBOXES;
+  const placed=[];
+  for(const l of limbs){
+    const b=labelBox(l);
+    for(let g=0;g<30;g++){
+      const hit=placed.some(o=>b.x0<o.x1&&o.x0<b.x1&&b.y0<o.y1&&o.y0<b.y1);
+      if(!hit) break;
+      const step=(b.y+26<=1000)?26:-26;
+      b.y+=step;b.y0+=step;b.y1+=step;
+    }
+    placed.push(b);
+  }
+  LBOXES=placed;
+  return placed;
+}
+// Exposed for the capture driver: the label geometry, measured by the browser
+// that draws it, so "labels collide" is a number and not a guess.
+window.__labels=function(){ ctx.save();
+  const out=boxes();
+  let overlaps=0;
+  for(let i=0;i<out.length;i++)for(let j=i+1;j<out.length;j++){
+    const a=out[i],b=out[j];
+    if(a.x0<b.x1&&b.x0<a.x1&&a.y0<b.y1&&b.y0<a.y1) overlaps++; }
+  ctx.restore();
+  return {boxes:out.map(b=>({name:b.name,x:+b.x.toFixed(1),y:+b.y.toFixed(1),
+    x0:+b.x0.toFixed(1),x1:+b.x1.toFixed(1),y0:+b.y0.toFixed(1),y1:+b.y1.toFixed(1)})),
+    overlaps, pairs:out.length*(out.length-1)/2};
+};
+// Geometry goes to an offscreen layer and is composited with a downscale/upscale
+// bloom. Per-stroke shadowBlur cost ~8 ms each in a software raster - measured
+// 22-33 s per frame at 1080p, which makes a fixed-frame-rate capture impossible.
+// One quarter-scale copy of the layer is the same glow for a few milliseconds.
+function renderLayer(p){
+  const reveal=Math.min(1,p/GROW);
+  lc.clearRect(0,0,1920,1080);
+  // glow backdrop
+  const g=lc.createRadialGradient(960,700,50,960,700,700);
+  g.addColorStop(0,"rgba(0,229,255,.10)");g.addColorStop(1,"rgba(0,0,0,0)");
+  lc.fillStyle=g;lc.fillRect(0,0,1920,1080);
+  lc.lineCap="round";
+  for(const s of SEG_SOLID){
+    const local=Math.max(0,Math.min(1,(reveal*1.15)-(8-s.depth)*.015));
+    if(local<=0)continue;
+    lc.strokeStyle=s.col;lc.lineWidth=Math.max(1,s.w*local);
+    lc.beginPath();lc.moveTo(s.x0,s.y0);
+    lc.lineTo(s.x0+(s.x1-s.x0)*local,s.y0+(s.y1-s.y0)*local);lc.stroke();
+  }
+  for(const s of SEG_THIN){
+    const local=Math.max(0,Math.min(1,(reveal*1.15)-.02));
+    if(local<=0)continue;
+    lc.strokeStyle=s.col;lc.lineWidth=Math.max(1,s.w*local);
+    lc.beginPath();lc.moveTo(s.x0,s.y0);
+    lc.lineTo(s.x0+(s.x1-s.x0)*local,s.y0+(s.y1-s.y0)*local);lc.stroke();
+  }
+  // Leaves appear only once the limbs are most of the way grown: at the old
+  // threshold (.02) all 6,495 leaf dots popped in the first second and the tree
+  // read as confetti floating at the ends of branches that were not drawn yet.
+  const leafR=Math.max(0,Math.min(1,(reveal-.55)/.35));
+  for(const s of SEG_LEAF){
+    const local=leafR;
+    if(local<=0)continue;
+    lc.fillStyle=s.colf;lc.beginPath();
+    lc.arc(s.x0+(s.x1-s.x0)*local,s.y0+(s.y1-s.y0)*local,3.2,0,7);lc.fill();
+  }
+}
+function draw(p){
+  renderLayer(p);
+  ctx.clearRect(0,0,1920,1080);
+  ctx.drawImage(layer,0,0);
+  // Bloom alpha is applied on the 480x270 canvas (cheap), then composited with
+  // 'lighter' at full alpha, so no full-frame alpha pass is needed.
+  gc.clearRect(0,0,480,270);
+  gc.globalCompositeOperation="source-over";gc.drawImage(layer,0,0,480,270);
+  gc.globalCompositeOperation="destination-in";
+  gc.fillStyle="rgba(0,0,0,.55)";gc.fillRect(0,0,480,270);
+  gc.globalCompositeOperation="source-over";
+  ctx.save();ctx.globalCompositeOperation="lighter";
+  ctx.drawImage(glow,0,0,1920,1080);ctx.restore();
+  // trunk-root label
+  ctx.font=`700 26px ${MONO}`;ctx.textAlign="center";
+  ctx.fillStyle="#ffd479";ctx.fillText("azazael-core  (stdlib + numpy)",960,1042);
+  // limb labels fade in during LABEL phase, at each limb's own tip
+  if(p>GROW){
+    const q=Math.min(1,(p-GROW)/LABEL);
+    ctx.textAlign="center";
+    const lboxes=boxes();
+    for(let i=0;i<limbs.length;i++){
+      const l=limbs[i], b=lboxes[i];
+      ctx.fillStyle=`rgba(6,11,24,${(.72*q).toFixed(3)})`;
+      ctx.fillRect(b.x0-4,b.y0-2,(b.x1-b.x0)+8,(b.y1-b.y0)+4);
+      ctx.textAlign=b.align;
+      ctx.font=`700 24px ${MONO}`;ctx.fillStyle=rgba(l.hue,q);ctx.fillText(l.name,b.x,b.y);
+      ctx.font=`400 12px ${MONO}`;ctx.fillStyle=`rgba(123,134,164,${q.toFixed(3)})`;
+      ctx.fillText(l.src,b.x,b.y+18);
+    }
+  }
+  // falling META leaves during hold
+  if(p>GROW+2000){
+    const t=(p-GROW-2000)/1000;
+    ctx.font=`20px ${MONO}`;ctx.fillStyle="rgba(107,118,148,.7)";
+    for(let i=0;i<14;i++){
+      const fx=(i*137)%1920, fy=(t*60+i*90)%1080;   // deterministic: no RNG here
+      ctx.fillText("🍂",fx,fy);
+    }
+  }
+  // captions
+  if(p<9000)cap.innerHTML="growing the trunk… <b>azazael-core</b>";
+  else if(p<GROW)cap.innerHTML="cleaving branches — <b>each leaves with a shim, the trunk loses nothing</b>";
+  else if(p<GROW+LABEL)cap.innerHTML="10 functional trees + <b>1 free META prune</b> 🍂";
+  else cap.innerHTML="YGGDRASIL CLEAVE • <b>10 trees • 0 loss • one producer at a time</b>";
+}
+window.__draw=draw;
+window.__step=function(ms){ return new Promise(function(res){ VCLOCK=ms; draw(ms);
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ res(ms); }); }); }); };
+window.__live=function(){ VCLOCK=null; };
+// The loop paints only while the clock is live. Once the driver pins the clock
+// it keeps pumping rAF without redrawing: a headless page that stops animating
+// never commits another frame and captureScreenshot blocks, while a page that
+// redraws 4000 strokes per vsync in software GL makes each stepped draw take
+// tens of seconds. Pumping without painting is the one state where both work.
+function frame(){
+  if(VCLOCK===null){
+    const p=performance.now()-T0;
+    draw(p);
+    if(p>=TOTAL){window.__done=true;return;}
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

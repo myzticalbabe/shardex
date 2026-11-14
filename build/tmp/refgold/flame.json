@@ -1,0 +1,44 @@
+{
+ "shape": "flame-arena-v1",
+ "shard": "highend-duel@sha256:ea100737aa98196ecd0430bf56bbb1fb17d21d3db2134f9af3cfc49d678e3e14",
+ "shard_name": "highend_duel",
+ "source": "..\\docs\\METTHEW\\reference-shards\\highend_duel",
+ "fidelity": "ARENA-FROM-SHARD: parameters generated from this shard; the original game's rules are NOT extracted (see SHARDEX.md L4)",
+ "tunables": {
+  "sim_hz": 60,
+  "gravity": 18.0,
+  "speed": 6.0,
+  "jump": 7.0,
+  "arena": 8.06,
+  "orbs": 3,
+  "difficulty": 1.08,
+  "seed": 3926918967
+ },
+ "golden": {
+  "state_sha256": "1f046312729509fc",
+  "ticks": 120,
+  "token": "AZAZAEL-GOLDEN-OK",
+  "headless": true
+ },
+ "controls": {
+  "move": "A/D or left/right",
+  "jump": "space or W",
+  "click": "click or drag the arena: walk there (the click also hops)",
+  "restart": "R",
+  "tune": "edit tunables in flame.json, reload"
+ },
+ "for_tournaments": {
+  "deterministic": "fixed-step sim at sim_hz; the golden hash covers sim state only, never a frame",
+  "tweak_surface": [
+   "sim_hz",
+   "gravity",
+   "speed",
+   "jump",
+   "arena",
+   "orbs",
+   "difficulty",
+   "seed"
+  ],
+  "record": "python shardex.py --golden <shard> --tune k=v ... writes the hash a bracket must agree on"
+ }
+}

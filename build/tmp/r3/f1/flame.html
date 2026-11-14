@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>FLAME</title>
+<style>
+  html,body{margin:0;height:100%;background:#05070c;color:#cfe3ff;
+            font:13px/1.45 ui-monospace,Consolas,monospace;overflow:hidden}
+  canvas{display:block;width:100vw;height:100vh}
+  #hud{position:fixed;left:16px;top:14px;pointer-events:none;text-shadow:0 0 8px #000}
+  #hud b{color:#ffb347}
+  #golden{position:fixed;right:16px;bottom:12px;font-size:11px;color:#5b7a9c}
+  #won{position:fixed;inset:0;display:none;place-items:center;font-size:34px;
+       color:#ffb347;text-shadow:0 0 24px #ff8c00}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="hud"></div>
+<div id="won">ARENA CLEARED</div>
+<div id="golden">golden: pending</div>
+<script>
+"use strict";
+const FLAME = {"controls": {"click": "click or drag the arena: walk there (the click also hops)", "jump": "space or W", "move": "A/D or left/right", "restart": "R", "tune": "edit tunables in flame.json, reload"}, "fidelity": "ARENA-FROM-SHARD: parameters generated from this shard; the original game's rules are NOT extracted (see SHARDEX.md L4)", "for_tournaments": {"deterministic": "fixed-step sim at sim_hz; the golden hash covers sim state only, never a frame", "record": "python shardex.py --golden <shard> --tune k=v ... writes the hash a bracket must agree on", "tweak_surface": ["sim_hz", "gravity", "speed", "jump", "arena", "orbs", "difficulty", "seed"]}, "golden": {"headless": true, "state_sha256": "1b045cc66e9503b0", "ticks": 120, "token": "AZAZAEL-GOLDEN-OK"}, "shape": "flame-arena-v1", "shard": "gateway-go@sha256:ec5b0c23a715d34515dc9cdfd53562fbc95bab13ae7b3cdcf8a42882c66a055b", "shard_name": "gateway-go", "source": "build\\tmp\\r3\\s1\\shards\\gateway-go", "tunables": {"arena": 8.03, "difficulty": 1.08, "gravity": 18.0, "jump": 7.0, "orbs": 3, "seed": 3965389859, "sim_hz": 60, "speed": 6.0}};
+const T = FLAME.tunables;
+
+/* ---- the tick: IDENTICAL arithmetic to shardex.simulate() ---- */
+function orbPositions(){
+  let s = (T.seed >>> 0) || 1, out = [], span = T.arena * 0.8;
+  for (let i = 0; i < T.orbs; i++){
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    const x = ((s / 0xFFFFFFFF) * 2 - 1) * span;
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    const z = ((s / 0xFFFFFFFF) * 2 - 1) * span;
+    out.push([x, z]);
+  }
+  return out;
+}
+function fnv1a64(text){
+  let h1 = 2166136261, h2 = 84696351;
+  for (let i = 0; i < text.length; i++){
+    const b = text.charCodeAt(i) & 0xff;
+    h1 = Math.imul(h1 ^ b, 16777619) >>> 0;
+    h2 = Math.imul(h2 ^ b, 16777619) >>> 0;
+  }
+  return ("0000000" + h1.toString(16)).slice(-8) + ("0000000" + h2.toString(16)).slice(-8);
+}
+function makeState(){ return {x:0, y:0, z:0, vy:0, collected:0, tick:0}; }
+function step(st, ix, iz, jumpAt){
+  const dt = 1 / T.sim_hz;
+  if (jumpAt && st.y <= 0.0001) st.vy = T.jump;
+  st.x = st.x + ix * T.speed * dt;
+  st.z = st.z + iz * T.speed * dt;
+  st.vy = st.vy - T.gravity * dt;
+  st.y = st.y + st.vy * dt;
+  if (st.y < 0){ st.y = 0; st.vy = 0; }
+  if (st.x < -T.arena) st.x = -T.arena;
+  if (st.x >  T.arena) st.x =  T.arena;
+  if (st.z < -T.arena) st.z = -T.arena;
+  if (st.z >  T.arena) st.z =  T.arena;
+  for (let i = 0; i < ORBS.length; i++){
+    if (st.collected & (1 << i)) continue;
+    const dx = st.x - ORBS[i][0], dz = st.z - ORBS[i][1];
+    if (dx*dx + dz*dz < 1.44 && st.y < 1.5) st.collected = st.collected | (1 << i);
+  }
+  st.tick++;
+  return st;
+}
+function canonical(st){
+  return st.x.toFixed(4)+","+st.y.toFixed(4)+","+st.z.toFixed(4)+","+
+         st.vy.toFixed(4)+",0.0000,"+st.collected;
+}
+/* ---- the golden run: scripted input, before any player touches it ---- */
+const ORBS = orbPositions();
+(function(){
+  const st = makeState(), JUMPS = [10, 70], TICKS = FLAME.golden.ticks;
+  for (let t = 0; t < TICKS; t++){
+    step(st, t < (TICKS >> 1) ? 1 : -1, 0, JUMPS.indexOf(t) >= 0);
+  }
+  const h = fnv1a64(canonical(st));
+  const el = document.getElementById("golden");
+  el.textContent = "golden: " + h + (h === FLAME.golden.state_sha256 ? " OK" : " MISMATCH");
+  el.dataset.hash = h;
+  el.dataset.expected = FLAME.golden.state_sha256;
+  document.title = "FLAME " + h;
+})();
+
+/* ---- a driven play probe, so "playable" can be checked without a human ----
+   ?play=N runs N ticks of a chase-the-nearest-orb policy through the SAME step(),
+   then publishes the resulting state. Purely for verification: no policy is baked into
+   the golden hash, which stays a function of the scripted input alone. */
+(function(){
+  const match = /[?&]play=(\d+)/.exec(location.search || "");
+  if (!match) return;
+  const st = makeState(), ticks = Math.min(6000, parseInt(match[1], 10) || 0);
+  for (let t = 0; t < ticks; t++){
+    let target = null;
+    for (let i = 0; i < ORBS.length; i++){
+      if (!(st.collected & (1 << i))) { target = ORBS[i]; break; }
+    }
+    const ix = target ? (target[0] > st.x + 0.05 ? 1 : target[0] < st.x - 0.05 ? -1 : 0) : 0;
+    const iz = target ? (target[1] > st.z + 0.05 ? 1 : target[1] < st.z - 0.05 ? -1 : 0) : 0;
+    step(st, ix, iz, st.y <= 0.0001 && st.tick % 12 === 0);
+  }
+  const el = document.getElementById("golden");
+  el.dataset.play = canonical(st);
+  el.dataset.collected = String(popcount(st.collected));
+  el.dataset.ticks = String(st.tick);
+})();
+
+/* ---- presentation: software-projected 3D, no library, no network ---- */
+const canvas = document.getElementById("c"), ctx = canvas.getContext("2d");
+let W = 0, H = 0;
+function resize(){ W = canvas.width = innerWidth * devicePixelRatio;
+                   H = canvas.height = innerHeight * devicePixelRatio; }
+resize(); addEventListener("resize", resize);
+
+const KEYS = {};
+addEventListener("keydown", e => { KEYS[e.key.toLowerCase()] = true;
+                                  if (e.key === " ") e.preventDefault();
+                                  if (e.key.toLowerCase() === "r") reset(); });
+addEventListener("keyup", e => { KEYS[e.key.toLowerCase()] = false; });
+
+let player, accumulator = 0, last = 0;
+function reset(){ player = makeState(); }
+reset();
+
+/* a fixed camera looking at the arena centre */
+function project(p, eye){
+  const fwd = norm([-eye[0], 1.2 - eye[1], -eye[2]]);
+  const right = norm(cross(fwd, [0, 1, 0]));
+  const up = cross(right, fwd);
+  const d = [p[0]-eye[0], p[1]-eye[1], p[2]-eye[2]];
+  const zv = dot(d, fwd);
+  if (zv <= 0.15) return null;
+  const f = 900;
+  return [W/2 + (dot(d, right)/zv)*f, H/2 - (dot(d, up)/zv)*f, zv];
+}
+const dot = (a,b) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const cross = (a,b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const norm = a => { const m = Math.hypot(a[0],a[1],a[2]) || 1; return [a[0]/m,a[1]/m,a[2]/m]; };
+
+/* ---- clicks: the second input, and the one that needs no instruction ----
+   A click is unprojected onto the ground plane through the SAME camera draw() uses,
+   so the cube walks to the patch of floor that was clicked. Nothing here touches the
+   golden hash: that hash is a function of the scripted input alone, which is what lets
+   a bracket agree on an arena a human has been playing in. */
+let target = null, hop = false, clicks = 0;
+function goldenEl(){ return document.getElementById("golden"); }
+function eyeOf(player){ return [player.x * 0.35, 7.5, 18 - Math.min(6, T.arena * 0.2)]; }
+function pick(sx, sy, player){
+  const eye = eyeOf(player);
+  const fwd = norm([-eye[0], 1.2 - eye[1], -eye[2]]);
+  const right = norm(cross(fwd, [0, 1, 0]));
+  const up = cross(right, fwd);
+  const u = (sx - W / 2) / 900, v = (H / 2 - sy) / 900;
+  const d = [fwd[0] + u*right[0] + v*up[0], fwd[1] + u*right[1] + v*up[1],
+             fwd[2] + u*right[2] + v*up[2]];
+  if (!(d[1] < -0.001)) return null;          /* the ray is at or above the horizon */
+  const t = -eye[1] / d[1];
+  const x = eye[0] + t * d[0], z = eye[2] + t * d[2];
+  return [Math.max(-T.arena, Math.min(T.arena, x)),
+          Math.max(-T.arena, Math.min(T.arena, z))];
+}
+function clickAt(cssX, cssY){
+  clicks++;
+  hop = true;
+  const p = pick(cssX * devicePixelRatio, cssY * devicePixelRatio, player);
+  const el = goldenEl();
+  el.dataset.clicks = String(clicks);
+  if (p){
+    target = p;
+    el.dataset.target = p[0].toFixed(2) + "," + p[1].toFixed(2);
+  }
+  return p;
+}
+canvas.style.cursor = "crosshair";
+canvas.addEventListener("pointerdown", e => { clickAt(e.clientX, e.clientY); });
+canvas.addEventListener("pointerup", () => { target = null; });
+canvas.addEventListener("pointermove", e => { if (e.buttons) clickAt(e.clientX, e.clientY); });
+
+function draw(){
+  ctx.fillStyle = "#05070c"; ctx.fillRect(0, 0, W, H);
+  const eye = [player.x * 0.35, 7.5, 18 - Math.min(6, T.arena * 0.2)];
+
+  /* ground grid */
+  ctx.strokeStyle = "rgba(90,140,200,0.20)"; ctx.lineWidth = 1;
+  for (let i = -T.arena; i <= T.arena; i += 2){
+    const a = project([i, 0, -T.arena], eye), b = project([i, 0, T.arena], eye);
+    if (a && b){ ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke(); }
+    const c = project([-T.arena, 0, i], eye), d = project([T.arena, 0, i], eye);
+    if (c && d){ ctx.beginPath(); ctx.moveTo(c[0],c[1]); ctx.lineTo(d[0],d[1]); ctx.stroke(); }
+  }
+
+  /* orbs */
+  ORBS.forEach((o, i) => {
+    if (player.collected & (1 << i)) return;
+    const p = project([o[0], 0.9 + Math.sin((performance.now()/600) + i) * 0.18, o[1]], eye);
+    if (!p) return;
+    const r = Math.max(4, 240 / p[2]);
+    const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r);
+    g.addColorStop(0, "#fff3b0"); g.addColorStop(0.45, "#ffb347");
+    g.addColorStop(1, "rgba(255,140,0,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 7); ctx.fill();
+  });
+
+  /* the player: a cube, painter-sorted faces */
+  const s = 0.55, faces = [
+    [[-s,-s,-s],[ s,-s,-s],[ s, s,-s],[-s, s,-s]],
+    [[-s,-s, s],[ s,-s, s],[ s, s, s],[-s, s, s]],
+    [[-s,-s,-s],[-s,-s, s],[-s, s, s],[-s, s,-s]],
+    [[ s,-s,-s],[ s,-s, s],[ s, s, s],[ s, s,-s]],
+    [[-s,-s,-s],[ s,-s,-s],[ s,-s, s],[-s,-s, s]],
+    [[-s, s,-s],[ s, s,-s],[ s, s, s],[-s, s, s]]];
+  const tris = faces.map((f, i) => {
+    const pts = f.map(v => project([player.x+v[0], 0.55+player.y+v[1], player.z+v[2]], eye));
+    return {pts, i, depth: pts[0] ? pts[0][2] : 1e9};
+  }).filter(t => t.pts.every(Boolean)).sort((a,b) => b.depth - a.depth);
+  tris.forEach(t => {
+    const shade = 40 + [110, 90, 70, 95, 60, 130][t.i];
+    ctx.fillStyle = "rgb(" + shade + "," + (shade+18) + "," + (shade+44) + ")";
+    ctx.beginPath(); ctx.moveTo(t.pts[0][0], t.pts[0][1]);
+    t.pts.slice(1).forEach(p => ctx.lineTo(p[0], p[1])); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "rgba(180,220,255,0.28)"; ctx.stroke();
+  });
+
+  /* shadow */
+  const sh = project([player.x, 0.01, player.z], eye);
+  if (sh){ ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.beginPath();
+           ctx.ellipse(sh[0], sh[1], 300/sh[2], 120/sh[2], 0, 0, 7); ctx.fill(); }
+}
+
+function inputVector(st){
+  let ix = (KEYS["a"] || KEYS["arrowleft"] ? -1 : 0) + (KEYS["d"] || KEYS["arrowright"] ? 1 : 0);
+  let iz = (KEYS["w"] || KEYS["arrowup"] ? -1 : 0) + (KEYS["s"] || KEYS["arrowdown"] ? 1 : 0);
+  if (target){
+    const dx = target[0] - st.x, dz = target[1] - st.z;
+    ix = Math.abs(dx) > 0.25 ? (dx > 0 ? 1 : -1) : 0;
+    iz = Math.abs(dz) > 0.25 ? (dz > 0 ? 1 : -1) : 0;
+    if (Math.abs(dx) <= 0.25 && Math.abs(dz) <= 0.25) target = null;
+  }
+  return [ix, iz];
+}
+
+function frame(now){
+  const dt = 1 / T.sim_hz;
+  if (!last) last = now;
+  accumulator += Math.min(0.25, (now - last) / 1000);
+  last = now;
+  while (accumulator >= dt){
+    const v = inputVector(player);
+    const jumpNow = KEYS[" "] || hop; hop = false;
+    step(player, v[0] * T.difficulty, v[1] * T.difficulty, jumpNow);
+    accumulator -= dt;
+  }
+  draw();
+  const won = player.collected === (1 << T.orbs) - 1;
+  document.getElementById("won").style.display = won ? "grid" : "none";
+  document.getElementById("hud").innerHTML =
+    "FLAME &nbsp; <b>" + Math.round(T.arena) + "m</b> arena &nbsp; " +
+    "<b>" + T.orbs + "</b> orbs &nbsp; collected <b>" +
+    popcount(player.collected) + "/" + T.orbs + "</b><br>" +
+    "shard " + FLAME.shard.slice(0, 19) + "… &nbsp; " + T.sim_hz + " Hz";
+  goldenEl().dataset.pos = player.x.toFixed(2) + "," + player.z.toFixed(2);
+  requestAnimationFrame(frame);
+}
+function popcount(v){ let n = 0; while (v){ n += v & 1; v >>>= 1; } return n; }
+requestAnimationFrame(frame);
+
+/* ---- ?probe=clicks: dispatch REAL PointerEvents at the canvas and publish whether a
+   click mutated play state WITHOUT moving the golden hash. Same idea as ?play=N: an
+   affordance for a headless check, not a second way to play. */
+(function(){
+  if (!/[?&]probe=clicks/.test(location.search || "")) return;
+  const el = goldenEl(), box = canvas.getBoundingClientRect();
+  const hashAtClick = el.dataset.hash || "";
+  el.dataset.probeHashBefore = hashAtClick;
+  el.dataset.probePosBefore = player.x.toFixed(2) + "," + player.z.toFixed(2);
+  const fire = (type, x, y) => canvas.dispatchEvent(new PointerEvent(type, {
+    clientX: x, clientY: y, buttons: type === "pointerup" ? 0 : 1, pointerId: 1,
+    bubbles: true, cancelable: true }));
+  fire("pointerdown", box.width * 0.82, box.height * 0.72);
+  const targetAfter = el.dataset.target || "";
+  /* --dump-dom does not advance requestAnimationFrame, so fast-forward 120 ticks of the
+     SAME inputVector() + step() the frame loop calls. A copy of the arithmetic here
+     would prove nothing about the handler. */
+  for (let t = 0; t < 120; t++){
+    const v = inputVector(player);
+    step(player, v[0] * T.difficulty, v[1] * T.difficulty, t === 0);
+  }
+  setTimeout(function(){
+    fire("pointermove", box.width * 0.78, box.height * 0.70);
+    const posNow = player.x.toFixed(2) + "," + player.z.toFixed(2);
+    el.dataset.probeTarget = targetAfter;
+    el.dataset.probePosAfter = posNow;
+    el.dataset.probeClicks = el.dataset.clicks || "0";
+    el.dataset.probe = (targetAfter && posNow !== el.dataset.probePosBefore &&
+                        (el.dataset.hash || "") === hashAtClick) ? "PASS" : "FAIL";
+  }, 1500);
+})();
+</script></body></html>

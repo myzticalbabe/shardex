@@ -1,0 +1,95 @@
+{
+ "id": "pytest-cache@sha256:7870c49f5912793b07d711c661bc6e6d64d380cda69cefe2f26d6f82fac0de66",
+ "version": "1.0.0",
+ "genre": "doc-only",
+ "tier": "lowend",
+ "files": [
+  {
+   "path": ".gitignore",
+   "sha256": "e7c6bb30148cf667606dcd63e7ca77acaa3cfb0c8303bf09e6419e1e1669dc6d",
+   "role": "data",
+   "size_bytes": 39
+  },
+  {
+   "path": "CACHEDIR.TAG",
+   "sha256": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4",
+   "role": "data",
+   "size_bytes": 191
+  },
+  {
+   "path": "README.md",
+   "sha256": "420e808d79a6c25d3cda0af33bc4782314a14949866682c68ce8149e89b66b70",
+   "role": "data",
+   "size_bytes": 310
+  },
+  {
+   "path": "nodeids",
+   "sha256": "d7afbf727843ba7635f601ae21a0a4fd79e4511f46ae186ff23ba5a1b9abefff",
+   "role": "data",
+   "size_bytes": 487
+  }
+ ],
+ "entrypoint": "",
+ "loader": "wasm3-det",
+ "sim_hz": 60,
+ "golden_run": {
+  "input": "",
+  "ticks": 0,
+  "state_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "token": "AZAZAEL-GOLDEN-OK",
+  "headless": true
+ },
+ "capabilities": [],
+ "hubs": [],
+ "budget": {
+  "payload_bytes_max": 2097152,
+  "tick_budget_ms": {
+   "p50": 0.0,
+   "p99": 0.0,
+   "scene": "unmeasured: not forged"
+  }
+ },
+ "licence": "UNKNOWN -- per-file provenance in provenance[]",
+ "author_pubkey": "",
+ "execution_model": "resident_host",
+ "env_allowlist": [],
+ "tick_budget": {
+  "p50_ms": 0.0,
+  "p99_ms": 0.0,
+  "scene": "unmeasured: not forged"
+ },
+ "competitive": false,
+ "provenance": [
+  {
+   "file": ".pytest_cache/.gitignore",
+   "sha256": "e7c6bb30148cf667606dcd63e7ca77acaa3cfb0c8303bf09e6419e1e1669dc6d",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": ".pytest_cache/CACHEDIR.TAG",
+   "sha256": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": ".pytest_cache/README.md",
+   "sha256": "420e808d79a6c25d3cda0af33bc4782314a14949866682c68ce8149e89b66b70",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": ".pytest_cache/v/cache/nodeids",
+   "sha256": "d7afbf727843ba7635f601ae21a0a4fd79e4511f46ae186ff23ba5a1b9abefff",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  }
+ ],
+ "shardex": {
+  "forged": false,
+  "state": "SLICE",
+  "group": ".pytest_cache",
+  "mirror_sha256": "2eddceb22c4b2392deb12f7d19ceb53b785ac6e67ef72c131aaa68da4dc9b552",
+  "note": "a slice is not a game: --forge it to get a golden run"
+ }
+}

@@ -1,0 +1,119 @@
+{
+ "id": "flame-engine-egg-info@sha256:fb445ff20a888fce9fc4a8042af427d83cb417e6b2e690c008e70f2bb59e0177",
+ "version": "1.0.0",
+ "genre": "doc-only",
+ "tier": "lowend",
+ "files": [
+  {
+   "path": "PKG-INFO",
+   "sha256": "4492a61b544b14ae5687409de68b2d715736bae2b0ac09e223c80d7ac35a0af0",
+   "role": "data",
+   "size_bytes": 6061
+  },
+  {
+   "path": "SOURCES.txt",
+   "sha256": "53a320b377a070dff26c9d3ef3da95d28a42a205cefe3f78271f2252d4da9a1a",
+   "role": "data",
+   "size_bytes": 324
+  },
+  {
+   "path": "dependency_links.txt",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "role": "data",
+   "size_bytes": 1
+  },
+  {
+   "path": "entry_points.txt",
+   "sha256": "cda8583a59eb47a1e9f58ba2851fc69aead6ad3344493f90ed702e7123662a01",
+   "role": "data",
+   "size_bytes": 57
+  },
+  {
+   "path": "requires.txt",
+   "sha256": "8d2d4db26a439ebf9df423f9258ab696757b73ff3d77e484cd5048974509a99b",
+   "role": "data",
+   "size_bytes": 17
+  },
+  {
+   "path": "top_level.txt",
+   "sha256": "21be1903630f069893d2d0bed2ab7945c3fd838da02dd7516f1f4f89819af857",
+   "role": "data",
+   "size_bytes": 6
+  }
+ ],
+ "entrypoint": "",
+ "loader": "wasm3-det",
+ "sim_hz": 60,
+ "golden_run": {
+  "input": "",
+  "ticks": 0,
+  "state_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "token": "AZAZAEL-GOLDEN-OK",
+  "headless": true
+ },
+ "capabilities": [],
+ "hubs": [],
+ "budget": {
+  "payload_bytes_max": 2097152,
+  "tick_budget_ms": {
+   "p50": 0.0,
+   "p99": 0.0,
+   "scene": "unmeasured: not forged"
+  }
+ },
+ "licence": "UNKNOWN -- per-file provenance in provenance[]",
+ "author_pubkey": "",
+ "execution_model": "resident_host",
+ "env_allowlist": [],
+ "tick_budget": {
+  "p50_ms": 0.0,
+  "p99_ms": 0.0,
+  "scene": "unmeasured: not forged"
+ },
+ "competitive": false,
+ "provenance": [
+  {
+   "file": "flame_engine.egg-info/PKG-INFO",
+   "sha256": "4492a61b544b14ae5687409de68b2d715736bae2b0ac09e223c80d7ac35a0af0",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "flame_engine.egg-info/SOURCES.txt",
+   "sha256": "53a320b377a070dff26c9d3ef3da95d28a42a205cefe3f78271f2252d4da9a1a",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "flame_engine.egg-info/dependency_links.txt",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "flame_engine.egg-info/entry_points.txt",
+   "sha256": "cda8583a59eb47a1e9f58ba2851fc69aead6ad3344493f90ed702e7123662a01",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "flame_engine.egg-info/requires.txt",
+   "sha256": "8d2d4db26a439ebf9df423f9258ab696757b73ff3d77e484cd5048974509a99b",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "flame_engine.egg-info/top_level.txt",
+   "sha256": "21be1903630f069893d2d0bed2ab7945c3fd838da02dd7516f1f4f89819af857",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  }
+ ],
+ "shardex": {
+  "forged": false,
+  "state": "SLICE",
+  "group": "flame_engine.egg-info",
+  "mirror_sha256": "2eddceb22c4b2392deb12f7d19ceb53b785ac6e67ef72c131aaa68da4dc9b552",
+  "note": "a slice is not a game: --forge it to get a golden run"
+ }
+}

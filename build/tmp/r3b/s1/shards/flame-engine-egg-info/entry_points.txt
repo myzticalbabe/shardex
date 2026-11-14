@@ -1,0 +1,2 @@
+[console_scripts]
+flame-engine = tools.flame_engine:main

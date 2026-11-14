@@ -1,0 +1,97 @@
+{
+ "id": "highend-duel@sha256:ea100737aa98196ecd0430bf56bbb1fb17d21d3db2134f9af3cfc49d678e3e14",
+ "version": "0.1.0",
+ "genre": "arena",
+ "tier": "highend",
+ "sim_hz": 120,
+ "files": [
+  {
+   "path": "main.py",
+   "sha256": "9b44296b0f858b652ab5718d07020a504e7039fdb1525cc91c1c934ad116ba11",
+   "role": "code",
+   "size_bytes": 7994
+  },
+  {
+   "path": "SHARD.md",
+   "sha256": "cdac5495bf49c996271f08d2da560c1217f156395c1f8dd13d5de8a6dcdc0319",
+   "role": "data",
+   "size_bytes": 3852
+  }
+ ],
+ "entrypoint": "main.py",
+ "loader": "native",
+ "golden_run": {
+  "input": "scripted: right 60 ticks, left 60 ticks, jumps at ticks 10 and 70",
+  "ticks": 120,
+  "state_sha256": "1f046312729509fc",
+  "token": "AZAZAEL-GOLDEN-OK",
+  "headless": true
+ },
+ "capabilities": [
+  {
+   "id": "fixed-point-steering",
+   "affects": "sim",
+   "determinism": "exact",
+   "note": "mm integers throughout; -3..+3 mm/tick, no float in the state"
+  },
+  {
+   "id": "integer-aim",
+   "affects": "sim",
+   "determinism": "exact",
+   "note": "aim resolved by integer sign, never by atan2"
+  },
+  {
+   "id": "recorded-input-transcript",
+   "affects": "sim",
+   "determinism": "exact",
+   "note": "the golden input is a fixed hex log; no clock, no ambient randomness"
+  },
+  {
+   "id": "integer-hash",
+   "affects": "sim",
+   "determinism": "exact",
+   "note": "sha256 over an explicitly ordered string, not over a repr or a dict"
+  },
+  {
+   "id": "volumetric-fog",
+   "affects": "presentation",
+   "determinism": "approximate",
+   "note": "declared and NOT implemented: the reference shard draws nothing; the field marks where a renderer would sit"
+  }
+ ],
+ "hubs": [],
+ "budget": {
+  "payload_bytes_max": 1048576,
+  "tick_budget_ms": {
+   "p50": 0.00074,
+   "p99": 0.00078,
+   "scene": "duel-1v1 integer sim, py3.15t author box (re-based 2026-11-01: 5 x 360 ticks)"
+  }
+ },
+ "licence": "MIT",
+ "author_pubkey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+ "execution_model": "resident_host",
+ "env_allowlist": [],
+ "tick_budget": {
+  "p50_ms": 0.00074,
+  "p99_ms": 0.00078,
+  "scene": "duel-1v1 integer sim, py3.15t author box (re-based 2026-11-01: 5 x 360 ticks)"
+ },
+ "competitive": false,
+ "provenance": [],
+ "shardex": {
+  "forged": true,
+  "state": "FORGED",
+  "flame": ".git\\shx\\forge_main",
+  "tunables": {
+   "sim_hz": 60,
+   "gravity": 18.0,
+   "speed": 6.0,
+   "jump": 7.0,
+   "arena": 8.06,
+   "orbs": 3,
+   "difficulty": 1.08,
+   "seed": 3926918967
+  }
+ }
+}

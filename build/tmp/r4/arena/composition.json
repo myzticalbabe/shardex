@@ -1,0 +1,28 @@
+{
+  "mesh_digest": "a478063c575874f2",
+  "composition_hash": "b3c06b4c4fa2444f",
+  "inputs": [
+    {
+      "digest": "1894f7d8c9908126"
+    },
+    {
+      "digest": "5646e72adaa7eab0"
+    }
+  ],
+  "lanes": [
+    {
+      "lane": 0,
+      "digest": "1894f7d8c9908126",
+      "neurons": 576,
+      "synapses": 1108,
+      "offset": 0
+    },
+    {
+      "lane": 1,
+      "digest": "5646e72adaa7eab0",
+      "neurons": 576,
+      "synapses": 1201,
+      "offset": 96
+    }
+  ]
+}

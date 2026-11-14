@@ -1,0 +1,99 @@
+{
+  "shape": "shardex-compose-v1",
+  "inputs": [
+    {
+      "shard_id": "highend-duel@sha256:ea100737aa98196ecd0430bf56bbb1fb17d21d3db2134f9af3cfc49d678e3e14",
+      "shard_path": "..\\docs\\METTHEW\\reference-shards\\highend_duel",
+      "config": {
+        "sim_hz": 60,
+        "gravity": 18.0,
+        "speed": 6.0,
+        "jump": 7.0,
+        "arena": 8.0,
+        "orbs": 3,
+        "difficulty": 1.0,
+        "seed": 3512582836
+      },
+      "golden_hash": "b957c80a3cc32988",
+      "op_chain": "",
+      "content_sha256": "d15dc2b4fdffdb1d508d97008900d2021c2f9b76637de384e47754c19a5caa79",
+      "state_sha256": "1f046312729509fc",
+      "params": {
+        "sim_hz": 120,
+        "ticks": 120,
+        "gravity": 18.0,
+        "speed": 6.0,
+        "jump": 7.0,
+        "arena": 8.0,
+        "orbs": 3,
+        "seed": 3512582836
+      }
+    },
+    {
+      "shard_id": "lowend-arena@sha256:ae1bfccbb68e8125c3267406369bbfc46ffea63bb17278eba980696b24a181da",
+      "shard_path": "..\\docs\\METTHEW\\reference-shards\\lowend_arena",
+      "config": {
+        "sim_hz": 60,
+        "gravity": 18.0,
+        "speed": 6.0,
+        "jump": 7.0,
+        "arena": 8.0,
+        "orbs": 3,
+        "difficulty": 1.0,
+        "seed": 2921069771
+      },
+      "golden_hash": "61a287f9903caaf8",
+      "op_chain": "",
+      "content_sha256": "ae1bfccbb68e8125c3267406369bbfc46ffea63bb17278eba980696b24a181da",
+      "state_sha256": "db5cee352d4a39cebbdcd53a27a8dabf5721c22df7e13b72211e2587af933634",
+      "params": {
+        "sim_hz": 60,
+        "ticks": 3600,
+        "gravity": 18.0,
+        "speed": 6.0,
+        "jump": 7.0,
+        "arena": 8.0,
+        "orbs": 3,
+        "seed": 2921069771
+      }
+    }
+  ],
+  "space": {
+    "sim_hz": 120,
+    "ticks": 3600,
+    "gravity": 18.0,
+    "speed": 6.0,
+    "jump": 7.0,
+    "arena": 8.0,
+    "orbs": 3,
+    "seed": 3512582836
+  },
+  "resolved": {
+    "sim_hz": {
+      "values": {
+        "highend-duel@sha256:ea100737aa98196ecd0430bf56bbb1fb17d21d3db2134f9af3cfc49d678e3e14": 120,
+        "lowend-arena@sha256:ae1bfccbb68e8125c3267406369bbfc46ffea63bb17278eba980696b24a181da": 60
+      },
+      "chosen": 120,
+      "source": "declared"
+    },
+    "ticks": {
+      "values": {
+        "highend-duel@sha256:ea100737aa98196ecd0430bf56bbb1fb17d21d3db2134f9af3cfc49d678e3e14": 120,
+        "lowend-arena@sha256:ae1bfccbb68e8125c3267406369bbfc46ffea63bb17278eba980696b24a181da": 3600
+      },
+      "chosen": 3600,
+      "source": "declared"
+    },
+    "seed": {
+      "values": {
+        "highend-duel@sha256:ea100737aa98196ecd0430bf56bbb1fb17d21d3db2134f9af3cfc49d678e3e14": 3512582836,
+        "lowend-arena@sha256:ae1bfccbb68e8125c3267406369bbfc46ffea63bb17278eba980696b24a181da": 2921069771
+      },
+      "chosen": 3512582836,
+      "source": "declared"
+    }
+  },
+  "composed_hash": "8c13c51303034dca",
+  "state": "COMPOSED"
+}

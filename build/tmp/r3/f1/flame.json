@@ -1,0 +1,44 @@
+{
+ "shape": "flame-arena-v1",
+ "shard": "gateway-go@sha256:ec5b0c23a715d34515dc9cdfd53562fbc95bab13ae7b3cdcf8a42882c66a055b",
+ "shard_name": "gateway-go",
+ "source": "build\\tmp\\r3\\s1\\shards\\gateway-go",
+ "fidelity": "ARENA-FROM-SHARD: parameters generated from this shard; the original game's rules are NOT extracted (see SHARDEX.md L4)",
+ "tunables": {
+  "sim_hz": 60,
+  "gravity": 18.0,
+  "speed": 6.0,
+  "jump": 7.0,
+  "arena": 8.03,
+  "orbs": 3,
+  "difficulty": 1.08,
+  "seed": 3965389859
+ },
+ "golden": {
+  "state_sha256": "1b045cc66e9503b0",
+  "ticks": 120,
+  "token": "AZAZAEL-GOLDEN-OK",
+  "headless": true
+ },
+ "controls": {
+  "move": "A/D or left/right",
+  "jump": "space or W",
+  "click": "click or drag the arena: walk there (the click also hops)",
+  "restart": "R",
+  "tune": "edit tunables in flame.json, reload"
+ },
+ "for_tournaments": {
+  "deterministic": "fixed-step sim at sim_hz; the golden hash covers sim state only, never a frame",
+  "tweak_surface": [
+   "sim_hz",
+   "gravity",
+   "speed",
+   "jump",
+   "arena",
+   "orbs",
+   "difficulty",
+   "seed"
+  ],
+  "record": "python shardex.py --golden <shard> --tune k=v ... writes the hash a bracket must agree on"
+ }
+}

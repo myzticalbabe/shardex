@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flame-engine"
+version = "0.1.0"
+description = "Fixed-step orchestrator for accelerated play: integer timebase, no dropped ticks."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+# No Python runtime dependencies: the engine is stdlib-only, and the fixed-step
+# claim is arithmetic over an integer timebase rather than a library call.
+#
+# tools/flame_engine.py had no __init__.py, so `tools` was a script directory and
+# every [project.scripts] entry below was dead at install time. tools/__init__.py
+# now exists and `packages = ["tools"]` makes the entry point importable.
+dependencies = []
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Games/Entertainment",
+  "Topic :: Software Development :: Quality Assurance",
+]
+# Author identity is deliberately absent, matching the sibling projects.
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+flame-engine = "tools.flame_engine:main"
+
+[project.urls]
+# No repository URL: the public repository does not exist yet.
+
+[tool.setuptools]
+# A package rather than seven py-modules: the console script addresses
+# tools.flame_engine, and running from a checkout (`python tools/flame_engine.py
+# --verify`) stays equivalent because the module has its own __main__ block.
+packages = ["tools"]
+
+[tool.pytest.ini_options]
+# This project now ships its own tests/ directory.
+testpaths = ["tests"]
+pythonpath = [".", "tools"]

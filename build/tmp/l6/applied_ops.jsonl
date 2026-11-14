@@ -1,0 +1,5 @@
+{"seq":0,"op":{"kind":"warp","amp":3,"freq":1,"phase":0},"digest":"057bc2bd95a88dcf","neurons":1728,"synapses":3417}
+{"seq":1,"op":{"kind":"extrude","gain":3},"digest":"86cfb81c770ec43e","neurons":1728,"synapses":3417}
+{"seq":2,"op":{"kind":"palette","shift":120},"digest":"ebcd84c5eb8095eb","neurons":1728,"synapses":3417}
+{"seq":3,"op":{"kind":"sprout","n":300,"min_gap":2},"digest":"d5b35697c89f8745","neurons":1728,"synapses":3717}
+{"seq":4,"op":{"kind":"prune","threshold":0.6},"digest":"268dca5b1e87ef89","neurons":1728,"synapses":3324}

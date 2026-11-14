@@ -1,0 +1,71 @@
+{
+ "id": "tools@sha256:d7ee48f806fba43f420e7f728b3d8c8c20a547a9cb19e4c5dc8609a541b5e46a",
+ "version": "1.0.0",
+ "genre": "arena",
+ "tier": "lowend",
+ "files": [
+  {
+   "path": "__init__.py",
+   "sha256": "f4fd29091f706cf09dd1aad446a01bfa2e478b0d671af38d20b9e2dd806abb24",
+   "role": "code",
+   "size_bytes": 463
+  },
+  {
+   "path": "flame_engine.py",
+   "sha256": "81adb4f64d9530a32da6856859131fc457093228fe7a2d237c7fa83da1510a82",
+   "role": "code",
+   "size_bytes": 24127
+  }
+ ],
+ "entrypoint": "__init__.py",
+ "loader": "wasm3-det",
+ "sim_hz": 60,
+ "golden_run": {
+  "input": "",
+  "ticks": 0,
+  "state_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "token": "AZAZAEL-GOLDEN-OK",
+  "headless": true
+ },
+ "capabilities": [],
+ "hubs": [],
+ "budget": {
+  "payload_bytes_max": 2097152,
+  "tick_budget_ms": {
+   "p50": 0.0,
+   "p99": 0.0,
+   "scene": "unmeasured: not forged"
+  }
+ },
+ "licence": "UNKNOWN -- per-file provenance in provenance[]",
+ "author_pubkey": "",
+ "execution_model": "resident_host",
+ "env_allowlist": [],
+ "tick_budget": {
+  "p50_ms": 0.0,
+  "p99_ms": 0.0,
+  "scene": "unmeasured: not forged"
+ },
+ "competitive": false,
+ "provenance": [
+  {
+   "file": "tools/__init__.py",
+   "sha256": "f4fd29091f706cf09dd1aad446a01bfa2e478b0d671af38d20b9e2dd806abb24",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "tools/flame_engine.py",
+   "sha256": "81adb4f64d9530a32da6856859131fc457093228fe7a2d237c7fa83da1510a82",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  }
+ ],
+ "shardex": {
+  "forged": false,
+  "state": "SLICE",
+  "group": "tools",
+  "mirror_sha256": "2eddceb22c4b2392deb12f7d19ceb53b785ac6e67ef72c131aaa68da4dc9b552",
+  "note": "a slice is not a game: --forge it to get a golden run"
+ }
+}

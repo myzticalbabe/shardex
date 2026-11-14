@@ -1,0 +1,131 @@
+{
+ "id": "project-flame@sha256:c4527ba6457fb8b11927a863d2b43c56d73ee4ae6ee8e25335c23cc1ed928d08",
+ "version": "1.0.0",
+ "genre": "arena",
+ "tier": "lowend",
+ "files": [
+  {
+   "path": ".gitignore",
+   "sha256": "0c751e8af300ae138b4fa116d18d8c537c8f8a0f4bbb3857eb272117d0a26420",
+   "role": "data",
+   "size_bytes": 310
+  },
+  {
+   "path": "HARDWARE.md",
+   "sha256": "a1f8a1d4cf13bf4437a8d377d7070fdd8b1c6b76e7786cd2733a8fb2b1947b7c",
+   "role": "data",
+   "size_bytes": 2997
+  },
+  {
+   "path": "LICENSE",
+   "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+   "role": "data",
+   "size_bytes": 11357
+  },
+  {
+   "path": "NOTICE",
+   "sha256": "85e5fdf51fd74eaf83d0bcb85870843b3215067cf9f46f338abde811ddf16df5",
+   "role": "data",
+   "size_bytes": 840
+  },
+  {
+   "path": "README.md",
+   "sha256": "71c2adbf0ccace9a256e760c051acace0af5cbd0382ce222cb5d8acf2c2f3622",
+   "role": "data",
+   "size_bytes": 5076
+  },
+  {
+   "path": "pyproject.toml",
+   "sha256": "de7172511eac0f2cdf9546c8d91b6912c4e09e0314261c6098673c29b311ecbc",
+   "role": "data",
+   "size_bytes": 1855
+  },
+  {
+   "path": "requiem.py",
+   "sha256": "cc5571ccd3a86da4aa80c81fd13fbd3e1c9d537c357fa93fe1f3e8bd7feae56d",
+   "role": "code",
+   "size_bytes": 14526
+  }
+ ],
+ "entrypoint": "requiem.py",
+ "loader": "wasm3-det",
+ "sim_hz": 60,
+ "golden_run": {
+  "input": "",
+  "ticks": 0,
+  "state_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "token": "AZAZAEL-GOLDEN-OK",
+  "headless": true
+ },
+ "capabilities": [],
+ "hubs": [],
+ "budget": {
+  "payload_bytes_max": 2097152,
+  "tick_budget_ms": {
+   "p50": 0.0,
+   "p99": 0.0,
+   "scene": "unmeasured: not forged"
+  }
+ },
+ "licence": "UNKNOWN -- per-file provenance in provenance[]",
+ "author_pubkey": "",
+ "execution_model": "resident_host",
+ "env_allowlist": [],
+ "tick_budget": {
+  "p50_ms": 0.0,
+  "p99_ms": 0.0,
+  "scene": "unmeasured: not forged"
+ },
+ "competitive": false,
+ "provenance": [
+  {
+   "file": ".gitignore",
+   "sha256": "0c751e8af300ae138b4fa116d18d8c537c8f8a0f4bbb3857eb272117d0a26420",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "HARDWARE.md",
+   "sha256": "a1f8a1d4cf13bf4437a8d377d7070fdd8b1c6b76e7786cd2733a8fb2b1947b7c",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "LICENSE",
+   "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "NOTICE",
+   "sha256": "85e5fdf51fd74eaf83d0bcb85870843b3215067cf9f46f338abde811ddf16df5",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "README.md",
+   "sha256": "71c2adbf0ccace9a256e760c051acace0af5cbd0382ce222cb5d8acf2c2f3622",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "pyproject.toml",
+   "sha256": "de7172511eac0f2cdf9546c8d91b6912c4e09e0314261c6098673c29b311ecbc",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  },
+  {
+   "file": "requiem.py",
+   "sha256": "cc5571ccd3a86da4aa80c81fd13fbd3e1c9d537c357fa93fe1f3e8bd7feae56d",
+   "origin": "mirror:..\\Project_FLAME",
+   "tier": "A"
+  }
+ ],
+ "shardex": {
+  "forged": false,
+  "state": "SLICE",
+  "group": "project-flame",
+  "mirror_sha256": "2eddceb22c4b2392deb12f7d19ceb53b785ac6e67ef72c131aaa68da4dc9b552",
+  "note": "a slice is not a game: --forge it to get a golden run"
+ }
+}

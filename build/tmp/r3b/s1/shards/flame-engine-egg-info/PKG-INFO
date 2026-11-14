@@ -1,0 +1,120 @@
+Metadata-Version: 2.4
+Name: flame-engine
+Version: 0.1.0
+Summary: Fixed-step orchestrator for accelerated play: integer timebase, no dropped ticks.
+License: Apache-2.0
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Topic :: Games/Entertainment
+Classifier: Topic :: Software Development :: Quality Assurance
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+License-File: NOTICE
+Provides-Extra: dev
+Requires-Dist: pytest>=7; extra == "dev"
+Dynamic: license-file
+
+# Project FLAME — the game engine and shard conversion
+
+FLAME is the **gaming** project: the engine that schedules a simulation, and the conversion
+that turns a discontinued game into a shard. `Project_FLAMING_SWORD` is the **code-fixing**
+project: it dissects source it has the rights to and mints units under the shard contract.
+
+They are separate projects by subject, and one can use the other, because the boundary between
+them is a **seam with a contract** rather than a shared codebase:
+
+| | FLAMING SWORD | FLAME |
+| --- | --- | --- |
+| question | "what is this code, and may I ship it?" | "what does this game do, and how do I run it?" |
+| input | a repository plus a licence record | a cartridge or a captured sim |
+| output | units, then a shard | a running game at a presentation tier |
+| gate | licence + source commit before minting | one state hash across tiers and rates |
+| never | ships bytes it has no right to | invents rules to make a frame look right |
+
+## The one interface both sides depend on
+
+```python
+class Machine(Protocol):
+    def reset(self) -> None: ...
+    def step(self, input_mask: int) -> None: ...
+    def state_hash(self) -> str: ...
+    def snapshot(self) -> dict: ...
+```
+
+FLAME does not care **how** a `step()` was obtained — dissected by the sword, captured from a
+cartridge at M-34, or written by hand — and the sword does not care what schedules it. Four
+methods is deliberately small: it is the narrowest contract that still lets the engine prove
+rate-independence, and every extra method would be a coupling the split was meant to remove.
+
+## What is here now
+
+| file | what it is |
+| --- | --- |
+| `tools/flame_engine.py` | **M-38, built** — exact rational clock over NTSC 60000/1001 Hz, a frame pump that never loses a remainder, a tick-exact comparison path, `Machine`/`StandInMachine`/`Session`, and `--verify` which prints an invariance matrix with a negative control |
+
+Verified 2026-11-01 on `C:/Azazael/.venvs/py315t/Scripts/python.exe` (3.15.0rc3 free-threading):
+
+```
+rate   accel  ticks     frames    state              verdict
+60     1      599       600       0eef62ab4b962198   OK
+120    1      599       1200      0eef62ab4b962198   OK
+144    1      599       1440      0eef62ab4b962198   OK
+240    1      599       2400      0eef62ab4b962198   OK
+                                                 (2x -> 1198, 8x -> 4795, one hash per group)
+acceleration: 599 ticks reached in 600 frames at 1x, 2 in 300, 8 in 75
+control: 60 Hz-assuming clock at 60/240 fps -> ticks [599, 2397], 2 distinct hashes -> CAUGHT
+VERIFIED
+```
+
+`--selftest` prints `9 clock controls, 3 machine controls, 4 schedule controls`;
+`tests/test_flame_engine.py` gives 7 passes.
+
+## What FLAME does *not* claim, and the line it draws
+
+The machine it drives today is a **stand-in** with the 2600's constraints (integer only, bounded
+state). What is proved is that the **scheduler** is rate-independent, not that a game is faithful;
+the output carries that in its own `scope` field. The 2600 sim arrives at M-34 through the same
+seam and the proof moves with it.
+
+That seam is also what answers "can a 2D game now be a 3D game?" — precisely:
+
+- **Presenting a 2D sim in 3D is legitimate** where the display was already a projection (a
+  pseudo-3D racer's state is one track position) or where the state has a dimension the screen
+  collapsed. The test is mechanical: does the **state hash sequence for the same inputs** stay
+  identical? If yes, only presentation changed and tier 0 can remain the original.
+- **Adding a third spatial dimension to a game whose state has none is not conversion.** The
+  state space *is* the game: `(x, y, vx, vy, score)` has no depth to recover, and the 2600's
+  collision is TIA hardware resolved in screen space, so a 3D version must invent hitboxes —
+  the exact thing the intake report warns against.
+- **What is real is a graft**: the extracted rules become a component of a *new* game, which is
+  what M-30's compose already models, and it must carry its source's class so an R1 revival
+  cannot be laundered into an R0 original by assembly.
+
+`state_hash` is the instrument that draws that line, which is why the engine measures it rather
+than describing it.
+
+## Cartridge sources (M-39)
+
+Three lawful sources, and a downloaded commercial ROM is not one of them:
+
+1. **the owner's own cartridge** — `tools/sword_2600.py --inspect` accepts it today;
+2. **the synthetic banked fixtures** in `tests/test_sword_2600.py`, which exercise F8/FE/3F
+   geometry and the wrong-hot-spot control;
+3. **a homebrew cart whose licence the user can show**.
+
+None is fetched. `tools/sword_2600.py` (the cartridge front-end) still lives in the repository's
+`tools/` because the intake documents cite it there; adopting it into `Project_FLAME/tools/` is a
+follow-up, not a rewrite.
+
+## Deliberately not here
+
+No renderer, no shader, no asset pipeline, and no networking. Presentation tiers are M-36 and
+they are gated on one state hash across tiers, so a tier that cannot prove it left the sim alone
+is not a tier.

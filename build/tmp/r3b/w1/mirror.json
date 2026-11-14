@@ -1,0 +1,196 @@
+{
+ "state": "MIRRORED",
+ "source": "..\\Project_FLAME",
+ "source_root": "C:\\Azazael\\azazael\\Project_FLAME",
+ "mirrored_at_sha256": "2eddceb22c4b2392deb12f7d19ceb53b785ac6e67ef72c131aaa68da4dc9b552",
+ "totals": {
+  "files": 20,
+  "bytes": 72566,
+  "code": 4,
+  "asset": 0,
+  "data": 16,
+  "by_kind": {
+   "other": 16,
+   "python": 4
+  }
+ },
+ "skipped": [],
+ "pruned": [
+  {
+   "path": "build",
+   "reason": "SKIP_DIRS",
+   "files": 2,
+   "bytes": 24590,
+   "unreadable": 0
+  },
+  {
+   "path": "dist",
+   "reason": "SKIP_DIRS",
+   "files": 1,
+   "bytes": 17006,
+   "unreadable": 0
+  },
+  {
+   "path": "tests/__pycache__",
+   "reason": "SKIP_DIRS",
+   "files": 1,
+   "bytes": 17770,
+   "unreadable": 0
+  },
+  {
+   "path": "tools/__pycache__",
+   "reason": "SKIP_DIRS",
+   "files": 3,
+   "bytes": 76717,
+   "unreadable": 0
+  }
+ ],
+ "not_mirrored": {
+  "dirs": 4,
+  "files": 7,
+  "bytes": 136083,
+  "unreadable": 0
+ },
+ "files": [
+  {
+   "path": ".gitignore",
+   "sha256": "0c751e8af300ae138b4fa116d18d8c537c8f8a0f4bbb3857eb272117d0a26420",
+   "size_bytes": 310,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "HARDWARE.md",
+   "sha256": "a1f8a1d4cf13bf4437a8d377d7070fdd8b1c6b76e7786cd2733a8fb2b1947b7c",
+   "size_bytes": 2997,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "LICENSE",
+   "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+   "size_bytes": 11357,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "NOTICE",
+   "sha256": "85e5fdf51fd74eaf83d0bcb85870843b3215067cf9f46f338abde811ddf16df5",
+   "size_bytes": 840,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "README.md",
+   "sha256": "71c2adbf0ccace9a256e760c051acace0af5cbd0382ce222cb5d8acf2c2f3622",
+   "size_bytes": 5076,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "pyproject.toml",
+   "sha256": "de7172511eac0f2cdf9546c8d91b6912c4e09e0314261c6098673c29b311ecbc",
+   "size_bytes": 1855,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "requiem.py",
+   "sha256": "cc5571ccd3a86da4aa80c81fd13fbd3e1c9d537c357fa93fe1f3e8bd7feae56d",
+   "size_bytes": 14526,
+   "role": "code",
+   "kind": "python"
+  },
+  {
+   "path": ".pytest_cache/.gitignore",
+   "sha256": "e7c6bb30148cf667606dcd63e7ca77acaa3cfb0c8303bf09e6419e1e1669dc6d",
+   "size_bytes": 39,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": ".pytest_cache/CACHEDIR.TAG",
+   "sha256": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4",
+   "size_bytes": 191,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": ".pytest_cache/README.md",
+   "sha256": "420e808d79a6c25d3cda0af33bc4782314a14949866682c68ce8149e89b66b70",
+   "size_bytes": 310,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": ".pytest_cache/v/cache/nodeids",
+   "sha256": "d7afbf727843ba7635f601ae21a0a4fd79e4511f46ae186ff23ba5a1b9abefff",
+   "size_bytes": 487,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "flame_engine.egg-info/PKG-INFO",
+   "sha256": "4492a61b544b14ae5687409de68b2d715736bae2b0ac09e223c80d7ac35a0af0",
+   "size_bytes": 6061,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "flame_engine.egg-info/SOURCES.txt",
+   "sha256": "53a320b377a070dff26c9d3ef3da95d28a42a205cefe3f78271f2252d4da9a1a",
+   "size_bytes": 324,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "flame_engine.egg-info/dependency_links.txt",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "size_bytes": 1,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "flame_engine.egg-info/entry_points.txt",
+   "sha256": "cda8583a59eb47a1e9f58ba2851fc69aead6ad3344493f90ed702e7123662a01",
+   "size_bytes": 57,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "flame_engine.egg-info/requires.txt",
+   "sha256": "8d2d4db26a439ebf9df423f9258ab696757b73ff3d77e484cd5048974509a99b",
+   "size_bytes": 17,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "flame_engine.egg-info/top_level.txt",
+   "sha256": "21be1903630f069893d2d0bed2ab7945c3fd838da02dd7516f1f4f89819af857",
+   "size_bytes": 6,
+   "role": "data",
+   "kind": "other"
+  },
+  {
+   "path": "tests/test_flame_engine.py",
+   "sha256": "5d53acf1981d51177fa6c772b3b64d65ffb12f06b718d48f2489da34f9ffe4f7",
+   "size_bytes": 3522,
+   "role": "code",
+   "kind": "python"
+  },
+  {
+   "path": "tools/__init__.py",
+   "sha256": "f4fd29091f706cf09dd1aad446a01bfa2e478b0d671af38d20b9e2dd806abb24",
+   "size_bytes": 463,
+   "role": "code",
+   "kind": "python"
+  },
+  {
+   "path": "tools/flame_engine.py",
+   "sha256": "81adb4f64d9530a32da6856859131fc457093228fe7a2d237c7fa83da1510a82",
+   "size_bytes": 24127,
+   "role": "code",
+   "kind": "python"
+  }
+ ]
+}

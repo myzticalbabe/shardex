@@ -1,0 +1,53 @@
+{
+  "shape": "shardex-shardscript-v1",
+  "field": "field.json",
+  "field_sha256": "c35727cff43f6bfbce8bc9136bceb987f2c2bc8c08a915fdbd36c45b0f8724a4",
+  "base_mesh": "mesh.json",
+  "base_mesh_digest": "226d539422b9202a",
+  "ops": [
+    {
+      "seq": 0,
+      "op": {
+        "kind": "warp",
+        "amp": 3,
+        "freq": 1,
+        "phase": 0
+      },
+      "digest": "057bc2bd95a88dcf"
+    },
+    {
+      "seq": 1,
+      "op": {
+        "kind": "extrude",
+        "gain": 3
+      },
+      "digest": "86cfb81c770ec43e"
+    },
+    {
+      "seq": 2,
+      "op": {
+        "kind": "palette",
+        "shift": 120
+      },
+      "digest": "ebcd84c5eb8095eb"
+    },
+    {
+      "seq": 3,
+      "op": {
+        "kind": "sprout",
+        "n": 300,
+        "min_gap": 2
+      },
+      "digest": "d5b35697c89f8745"
+    },
+    {
+      "seq": 4,
+      "op": {
+        "kind": "prune",
+        "threshold": 0.6
+      },
+      "digest": "268dca5b1e87ef89"
+    }
+  ],
+  "chain": "c53e0b29bc3c1bb2636b7850f7522ce6"
+}

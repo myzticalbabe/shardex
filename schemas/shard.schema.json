@@ -1,0 +1,222 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://metthew.dev/shard.schema.json",
+  "title": "Metthew Shard Manifest v1.1",
+  "description": "v1.1 adds the high-end tier: `tier`, `capabilities` and `sim_hz`, plus `golden_run.headless`. All four are OPTIONAL, so every v1 manifest still validates. Tick audits on tool-runner invariants live in tools/metthew_validate.py, where they can name the field that failed; a draft-07 conditional could not report the partition breach as a sentence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "genre",
+    "files",
+    "entrypoint",
+    "loader",
+    "golden_run",
+    "hubs",
+    "budget",
+    "licence",
+    "author_pubkey",
+    "execution_model",
+    "env_allowlist",
+    "tick_budget"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+@sha256:[a-f0-9]{64}$",
+      "description": "Content-addressed shard ID: name@sha256:hash of the full bundle (manifest + files). Host-version fallback allowed during transition."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of this shard"
+    },
+    "genre": {
+      "type": "string",
+      "enum": ["arena", "puzzle", "ruleset", "doc-only", "simulation", "other"],
+      "description": "Genre determines which validator gates apply. Doc-only shards have zero code."
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["lowend", "highend", "any"],
+      "default": "any",
+      "description": "Target class (v1.1). `lowend` keeps every v1 gate: 24 files, 2 MiB payload, p99 < 33.3 ms. `highend` may exceed those but must declare its capabilities and a headless golden run. `any` is a v1 shard that has not been classified and is judged as lowend."
+    },
+    "files": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "role"],
+        "properties": {
+          "path": { "type": "string", "pattern": "^[^/].*$" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "role": { "type": "string", "enum": ["code", "asset", "data", "hub-ref"] },
+          "size_bytes": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "description": "All files in the shard. The 24-FILE CEILING IS NOW A LOW-END GATE, not a wire limit: v1 could not express a high-end bundle at all, and the deeper dive had already measured the 24-file rule wasting 64% of its own capacity. tools/metthew_validate.py enforces 24 for tier lowend/any and 1024 (with the payload cap) for tier highend."
+    },
+    "entrypoint": {
+      "type": "string",
+      "pattern": "^[^/].*$",
+      "description": "Relative path to the entrypoint file (must be listed in files[] with role=code)"
+    },
+    "loader": {
+      "type": "string",
+      "enum": ["wasm3-det", "native"],
+      "description": "Execution model loader. wasm3-det = Wasm 3.0 host, deterministic profile, threads+SIMD off. native = reserved for future host-version fallback."
+    },
+    "sim_hz": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 30,
+      "description": "Authoritative simulation rate (v1.1). The golden run ticks at this rate, and the tick budget is judged against it: p99_ms must stay under one tick (1000/sim_hz). A high-end shard at 120 Hz has 8.33 ms; the same shard at 30 Hz has 33.3 ms. Rendering above the sim rate is presentation and never part of the hash."
+    },
+    "golden_run": {
+      "type": "object",
+      "required": ["input", "ticks", "state_sha256", "token"],
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Base64-encoded fixed input bytes for the golden run"
+        },
+        "ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Deterministic tick count for the golden run"
+        },
+        "state_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA-256 of the full state after the golden run ticks"
+        },
+        "token": {
+          "type": "string",
+          "const": "AZAZAEL-GOLDEN-OK",
+          "description": "Golden token printed on stdout by a valid golden run"
+        },
+        "headless": {
+          "type": "boolean",
+          "description": "v1.1: the hash was taken with PRESENTATION DISABLED. Required (explicitly true) for tier highend, because a hash taken with an upscaler, a frame generator or a denoiser in the pipeline is a hash of the painter, not of the game. Also required whenever any declared capability is presentation-side and not exact."
+        }
+      },
+      "description": "The golden self-test: fixed input, fixed ticks, fixed state hash, fixed token."
+    },
+    "capabilities": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "required": ["id", "affects", "determinism"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{1,47}$",
+            "description": "Capability identifier, e.g. path-tracing, neural-upscale, frame-generation, mesh-culling, fixed-point-physics, recorded-input-transcript."
+          },
+          "affects": {
+            "type": "string",
+            "enum": ["sim", "presentation"],
+            "description": "Which side of the determinism partition this capability sits on. `sim` capabilities are inside the golden run's hash; `presentation` capabilities are outside it by construction."
+          },
+          "determinism": {
+            "type": "string",
+            "enum": ["exact", "seeded", "approximate"],
+            "description": "`exact` = bit-identical on every host; `seeded` = identical from a declared seed but host-dependent in the last bits; `approximate` = a different picture each run. Only `exact` may be on the sim side."
+          },
+          "note": { "type": "string" }
+        }
+      },
+      "description": "The determinism partition (v1.1). This is the field that lets a path-traced, frame-generated shard be verifiable at all: its beauty is declared presentation-side, so the golden run can be run headless and still be a proof."
+    },
+    "hubs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "sha256", "capability"],
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "capability": { "type": "string" },
+          "declared_by": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "description": "Declared shared libraries (hubs). Each hub is versioned and content-addressed. The validator counts coupling instead of hiding it."
+    },
+    "budget": {
+      "type": "object",
+      "required": ["payload_bytes_max", "tick_budget_ms"],
+      "properties": {
+        "payload_bytes_max": {
+          "type": "integer",
+          "default": 2097152,
+          "description": "Max packed payload size. 2 MiB default and ceiling for tier lowend/any; tier highend may declare up to 8 GiB, and the declared value is checked against the sum of files[].size_bytes."
+        },
+        "tick_budget_ms": {
+          "type": "object",
+          "required": ["p50", "p99", "scene"],
+          "properties": {
+            "p50": { "type": "number", "minimum": 0 },
+            "p99": { "type": "number", "minimum": 0 },
+            "scene": { "type": "string" }
+          },
+          "description": "Measured tick cost from M-02 bench on the reference box, per scene. p99 must stay under one sim tick: < 33.3 ms at 30 Hz, < 16.7 ms at 60 Hz, < 8.33 ms at 120 Hz."
+        }
+      },
+      "description": "Measured budget gates from M-02. Provisional numbers in the plan are replaced by readings."
+    },
+    "licence": {
+      "type": "string",
+      "description": "SPDX licence identifier (e.g., MIT, CC0-1.0, Unlicense). Per-asset provenance in files[] overrides this."
+    },
+    "author_pubkey": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]+={0,2}$",
+      "description": "Base64-encoded Ed25519 public key of the author. Used for signed result files (M-09) and bundle verification."
+    },
+    "execution_model": {
+      "type": "string",
+      "enum": ["resident_host", "one_shot"],
+      "description": "Execution model. resident_host = one process per shard with fixed-step loop and message boundary (required for 720p/30 on low-end, and for any shard whose sim must hold a tick budget). one_shot = call-per-tick via polyglot (only fits Python/JS). Must be resident_host for M-05 reference shards."
+    },
+    "env_allowlist": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Explicit list of environment variable keys the shard may read. Default empty — current polyglot path hands over the player's entire environment (secrets leak). A wildcard entry defeats the allowlist and is refused."
+    },
+    "tick_budget": {
+      "type": "object",
+      "required": ["p50_ms", "p99_ms", "scene"],
+      "properties": {
+        "p50_ms": { "type": "number", "minimum": 0 },
+        "p99_ms": { "type": "number", "minimum": 0 },
+        "scene": { "type": "string" }
+      },
+      "description": "Alias of budget.tick_budget_ms for top-level access. p99 must stay under one tick at the declared sim_hz."
+    },
+    "competitive": {
+      "type": "boolean",
+      "default": false,
+      "description": "Opt-in determinism tax. When true, the validator enforces per-tick hash chain and replay verification. Solo, puzzle, and doc-only shards should leave this false."
+    },
+    "provenance": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "sha256", "origin", "tier"],
+        "properties": {
+          "file": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "origin": { "type": "string" },
+          "tier": { "type": "string", "enum": ["A", "B", "C", "D"] }
+        }
+      },
+      "description": "Per-asset provenance: raw+sha+url+tier (same discipline as FETCH_LOG). Does not create an arbiter, but makes 'where did this sprite come from' answerable."
+    }
+  }
+}

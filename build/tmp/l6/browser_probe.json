@@ -1,0 +1,72 @@
+{
+ "scene": "meshscene.html",
+ "total": 12000,
+ "states": {
+  "t3000": "2a1a72985a1d8d1a",
+  "t6000": "64b0318cd77242d2",
+  "t9000": "c00577a226a9f964"
+ },
+ "errors": [],
+ "mesh_digest": "268dca5b1e87ef89",
+ "applied": 5,
+ "base_mesh_digest": "226d539422b9202a",
+ "field_sha256": "c35727cff43f6bfbce8bc9136bceb987f2c2bc8c08a915fdbd36c45b0f8724a4",
+ "provenance": {
+  "html_sha": "c16259e4d40796209785a9387d374c72a628d0b90aa62555311d996e8d707b91",
+  "prov": {
+   "scene_shape": "mesh-live-v1",
+   "field_sha": "4058af69c74e8b0c7ca9ab2fd8b21ea35c29d9bd2637a108d4272eaa290636ff",
+   "base_mesh_digest": "226d539422b9202a",
+   "total": 12000,
+   "orbit": 720,
+   "focal": 1400,
+   "source": "mesh",
+   "mesh": "build\\tmp\\l5\\mesh.json",
+   "composition": {
+    "composition_hash": "6ff14820ed418db8",
+    "mesh_digest": "226d539422b9202a",
+    "lanes": [
+     {
+      "lane": 0,
+      "digest": "1894f7d8c9908126",
+      "neurons": 576,
+      "synapses": 1108,
+      "offset": 0
+     },
+     {
+      "lane": 1,
+      "digest": "a478063c575874f2",
+      "neurons": 1152,
+      "synapses": 2309,
+      "offset": 192
+     }
+    ]
+   }
+  },
+  "applied_ops": [
+   {
+    "kind": "warp",
+    "amp": 3,
+    "freq": 1,
+    "phase": 0
+   },
+   {
+    "kind": "extrude",
+    "gain": 3
+   },
+   {
+    "kind": "palette",
+    "shift": 120
+   },
+   {
+    "kind": "sprout",
+    "n": 300,
+    "min_gap": 2
+   },
+   {
+    "kind": "prune",
+    "threshold": 0.6
+   }
+  ]
+ }
+}

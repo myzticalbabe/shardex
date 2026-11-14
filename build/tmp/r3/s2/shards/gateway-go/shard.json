@@ -1,0 +1,71 @@
+{
+ "id": "gateway-go@sha256:ec5b0c23a715d34515dc9cdfd53562fbc95bab13ae7b3cdcf8a42882c66a055b",
+ "version": "1.0.0",
+ "genre": "arena",
+ "tier": "lowend",
+ "files": [
+  {
+   "path": "go.mod",
+   "sha256": "85f720cae04724ff5e807714c1b9cbd58344c9615a0b43eaae9d49cd9ed4c913",
+   "role": "data",
+   "size_bytes": 32
+  },
+  {
+   "path": "main.go",
+   "sha256": "bf39109121a96f0c75ef02374ab7f9d0893c5fc22c8441898b97ce0af5893a98",
+   "role": "code",
+   "size_bytes": 5821
+  }
+ ],
+ "entrypoint": "main.go",
+ "loader": "wasm3-det",
+ "sim_hz": 60,
+ "golden_run": {
+  "input": "",
+  "ticks": 0,
+  "state_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "token": "AZAZAEL-GOLDEN-OK",
+  "headless": true
+ },
+ "capabilities": [],
+ "hubs": [],
+ "budget": {
+  "payload_bytes_max": 2097152,
+  "tick_budget_ms": {
+   "p50": 0.0,
+   "p99": 0.0,
+   "scene": "unmeasured: not forged"
+  }
+ },
+ "licence": "UNKNOWN -- per-file provenance in provenance[]",
+ "author_pubkey": "",
+ "execution_model": "resident_host",
+ "env_allowlist": [],
+ "tick_budget": {
+  "p50_ms": 0.0,
+  "p99_ms": 0.0,
+  "scene": "unmeasured: not forged"
+ },
+ "competitive": false,
+ "provenance": [
+  {
+   "file": "go.mod",
+   "sha256": "85f720cae04724ff5e807714c1b9cbd58344c9615a0b43eaae9d49cd9ed4c913",
+   "origin": "mirror:..\\gateway-go",
+   "tier": "A"
+  },
+  {
+   "file": "main.go",
+   "sha256": "bf39109121a96f0c75ef02374ab7f9d0893c5fc22c8441898b97ce0af5893a98",
+   "origin": "mirror:..\\gateway-go",
+   "tier": "A"
+  }
+ ],
+ "shardex": {
+  "forged": false,
+  "state": "SLICE",
+  "group": "gateway-go",
+  "mirror_sha256": "2f71ec1184f87c38ecba9bbfa0f69e7e9c0004c48e70cd852e558d91568d0fd3",
+  "note": "a slice is not a game: --forge it to get a golden run"
+ }
+}

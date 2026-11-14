@@ -1,0 +1,82 @@
+{
+  "id": "highend-ladder@sha256:6dd0485d35f76a8a0f15ed0eefc036091230fd5f4e972fdc9bf7ba9bf40ce920",
+  "version": "0.1.0",
+  "genre": "arena",
+  "tier": "highend",
+  "sim_hz": 60,
+  "files": [
+    {
+      "path": "main.py",
+      "sha256": "07cbd61d9f9d65737691624de85219bf706c5962bbcf6a1ef7d35faf44843449",
+      "role": "code",
+      "size_bytes": 11540
+    },
+    {
+      "path": "SHARD.md",
+      "sha256": "e0bab3007a110417f00e2fd0a050b4013b27a7cb4ffcf3f6227a04e701c8b2c8",
+      "role": "data",
+      "size_bytes": 3804
+    }
+  ],
+  "entrypoint": "main.py",
+  "loader": "native",
+  "golden_run": {
+    "input": "0f1e2d3c4b5a6978",
+    "ticks": 600,
+    "state_sha256": "c83f217d70dff576766c8ef036d0d4e4b70a171fdb1b5cae7862e7043e742aa3",
+    "token": "AZAZAEL-GOLDEN-OK",
+    "headless": true
+  },
+  "capabilities": [
+    {
+      "id": "fixed-point-steering",
+      "affects": "sim",
+      "determinism": "exact",
+      "note": "mm integers; -9..+9 mm/tick, clamped to a 200 mm ring"
+    },
+    {
+      "id": "recorded-input-transcript",
+      "affects": "sim",
+      "determinism": "exact",
+      "note": "8 hex bytes drive 600 ticks by a branch-free rule"
+    },
+    {
+      "id": "integer-hash",
+      "affects": "sim",
+      "determinism": "exact",
+      "note": "sha256 over the hand-written canonical string"
+    },
+    {
+      "id": "tier-ladder",
+      "affects": "presentation",
+      "determinism": "exact",
+      "note": "4 tiers, integer cost units, selected by integer comparison to --budget"
+    },
+    {
+      "id": "tier-removal-contract",
+      "affects": "presentation",
+      "determinism": "approximate",
+      "note": "each tier lists what it drops; L2 refuses a ladder where a higher tier drops more"
+    }
+  ],
+  "hubs": [],
+  "budget": {
+    "payload_bytes_max": 67108864,
+    "tick_budget_ms": {
+      "p50": 0.00071,
+      "p99": 0.00077,
+      "scene": "duel-1v1 melee, 4 tiers, 600 ticks, py3.15t author box"
+    }
+  },
+  "licence": "MIT",
+  "author_pubkey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  "execution_model": "resident_host",
+  "env_allowlist": [],
+  "tick_budget": {
+    "p50_ms": 0.00071,
+    "p99_ms": 0.00077,
+    "scene": "duel-1v1 melee, 4 tiers, 600 ticks, py3.15t author box"
+  },
+  "competitive": false,
+  "provenance": []
+}

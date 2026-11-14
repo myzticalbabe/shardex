@@ -1,0 +1,49 @@
+{
+  "round_num": 0,
+  "results": [
+    {
+      "shard_id": "highend-duel@sha256:ea100737aa98196ecd0430bf56bbb1fb17d21d3db2134f9af3cfc49d678e3e14",
+      "config": {
+        "sim_hz": 60,
+        "gravity": 18.0,
+        "speed": 6.0,
+        "jump": 7.0,
+        "arena": 8.0,
+        "orbs": 3,
+        "difficulty": 1.0,
+        "seed": 3512582836
+      },
+      "golden_hash": "8726c902860358c4",
+      "timestamp": "2026-11-02T23:57:25Z",
+      "result_sha256": "90efa25c1de3c8bd9a6b5aed0505cae1f89196b9db83e2b661c626aadd57c296",
+      "signature": {
+        "alg": "ed25519",
+        "author_pubkey": "33de755f951f5efc886f96054311c598e183b6d7d9fef4d4ab35f2e128421435",
+        "value": "b223137637adb25efe63b8fc49e94fe1c08fba6e6001a8d9bb65068c054f6f6eb8dc7d642b2c6540ad9ca4c8ca95cfbba2b8f89ca3b32c97d9307d9c969ed309",
+        "signed_over": "result_sha256"
+      }
+    },
+    {
+      "shard_id": "highend-ladder@sha256:6dd0485d35f76a8a0f15ed0eefc036091230fd5f4e972fdc9bf7ba9bf40ce920",
+      "config": {
+        "sim_hz": 60,
+        "gravity": 18.0,
+        "speed": 6.0,
+        "jump": 7.0,
+        "arena": 8.0,
+        "orbs": 3,
+        "difficulty": 1.0,
+        "seed": 245048625
+      },
+      "golden_hash": "410c288fce59a4b3",
+      "timestamp": "2026-11-02T23:57:25Z",
+      "result_sha256": "badf0cd9b304d0a66f3c978604dafb7863f66c7448a7f4156a3b27cea4fcdb7f",
+      "signature": {
+        "alg": "ed25519",
+        "author_pubkey": "003fd0b29dcd13bf9ac903d4fdf66efcd5b5a13be9dfa61b6c3cec920e66aac9",
+        "value": "c7c06bffef02e8e1c6c4eeb0773c9886d89336a7345b9fbd98f0b798b816edbfe99d7819ceb4c88963e989c974369c922cdbe1d6a6584a317ba5ab292058d40a",
+        "signed_over": "result_sha256"
+      }
+    }
+  ]
+}
