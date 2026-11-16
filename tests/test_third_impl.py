@@ -25,9 +25,45 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[2]
-SHARD_DIR = ROOT / "docs/METTHEW/reference-shards/highend_duel"
-sys.path.insert(0, str(ROOT / "Project_SHARDEX"))
+# This suite was written inside the monorepo, where the implementation lived in
+# `Project_SHARDEX/` and the reference shard in `docs/METTHEW/`. It now ships as a
+# standalone repository, so resolve against this repository first and keep the
+# monorepo layout as a fallback.
+_HERE = Path(__file__).resolve().parent
+_REPO = _HERE.parent
+_MONO = _REPO.parent
+
+
+def _first_dir(*candidates):
+    for candidate in candidates:
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def _first_file(*candidates):
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+SHARD_DIR = _first_dir(
+    _REPO / "docs/METTHEW/reference-shards/highend_duel",
+    _MONO / "docs/METTHEW/reference-shards/highend_duel",
+)
+THIRD_IMPL = _first_file(_REPO / "third_impl.py",
+                         _REPO / "Project_SHARDEX/third_impl.py")
+sys.path.insert(0, str((THIRD_IMPL or _REPO).parent))
+
+# The reference shard these five tests replay was never published with the
+# standalone repository, so they skip here rather than report a missing file as a
+# failure. They still run wherever the artifact exists.
+requires_reference_shard = pytest.mark.skipif(
+    SHARD_DIR is None,
+    reason="the reference shard under docs/METTHEW/reference-shards/ is not "
+           "published in this repository",
+)
 
 import third_impl  # noqa: E402  (path set up above)
 
@@ -55,12 +91,14 @@ def test_third_impl_never_imports_the_existing_implementation():
     assert not hasattr(third_impl, "shardex")
 
 
+@requires_reference_shard
 def test_third_impl_reproduces_the_golden_hash_from_the_artifact_alone():
     """The brief's test: a stranger, the spec, the shard — the same 16 characters."""
     result = third_impl.run(third_impl.tunables_for(_manifest()))
     assert result["digest"] == CLONE_GOLDEN
 
 
+@requires_reference_shard
 def test_third_impl_refuses_when_the_specification_omits_a_field():
     """Negative control: the gap detector must fire on a known-omitted field."""
     assert third_impl.spec_gap() == [], "the spec is complete or this control is blind"
@@ -69,6 +107,7 @@ def test_third_impl_refuses_when_the_specification_omits_a_field():
     assert exit_code == 3, "a missing field must refuse, not default"
 
 
+@requires_reference_shard
 def test_the_documented_golden_belongs_to_the_documented_tournament_config():
     """The recorded number is real — it is just not this shard's.
 
@@ -83,6 +122,7 @@ def test_the_documented_golden_belongs_to_the_documented_tournament_config():
     assert third_impl.run(derived)["digest"] == CLONE_GOLDEN
 
 
+@requires_reference_shard
 def test_the_golden_hash_does_not_depend_on_gravity():
     """Measured defect, pinned so it cannot be claimed away.
 
@@ -98,9 +138,10 @@ def test_the_golden_hash_does_not_depend_on_gravity():
     assert digests == {CLONE_GOLDEN}, "gravity now moves the hash; update the finding"
 
 
+@requires_reference_shard
 def test_the_command_line_reports_the_same_golden():
     completed = subprocess.run(
-        [sys.executable, str(ROOT / "Project_SHARDEX/third_impl.py"), str(SHARD_DIR)],
+        [sys.executable, str(THIRD_IMPL), str(SHARD_DIR)],
         capture_output=True, text=True, timeout=120)
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert CLONE_GOLDEN in completed.stdout
