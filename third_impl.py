@@ -18,6 +18,7 @@ Run:
     python Project_SHARDEX/third_impl.py <shard-dir>
     python Project_SHARDEX/third_impl.py <shard-dir> --drop arena   # negative control
 """
+
 from __future__ import annotations
 
 import json
@@ -27,7 +28,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 #: field -> (value, the SHARDEX.md sentence/passage that fixes it). None = not stated.
 SPEC: Dict[str, Tuple[Any, Optional[str]]] = {
-    "cores": (8, "SHX-R1: the spec is a routing table of constants, none of them implied"),
+    "cores": (
+        8,
+        "SHX-R1: the spec is a routing table of constants, none of them implied",
+    ),
     "sim_hz": (60, "Defaults `sim_hz=60, gravity=18.0, speed=6.0, jump=7.0`"),
     "gravity": (18.0, "Defaults ... `gravity=18.0`"),
     "speed": (6.0, "Defaults ... `speed=6.0`"),
@@ -41,7 +45,10 @@ SPEC: Dict[str, Tuple[Any, Optional[str]]] = {
     "jump_arm": (0.0001, "if `tick in jumps` and `y <= 0.0001`"),
     "collect_radius": (1.2, "collect when `dx*dx + dz*dz < 1.2*1.2`"),
     "collect_ymax": (1.5, "**and** `y < 1.5`"),
-    "wall_law": (True, "`x` and `z` are clamped (not bounced) ... `y < 0: y = 0; vy = 0`"),
+    "wall_law": (
+        True,
+        "`x` and `z` are clamped (not bounced) ... `y < 0: y = 0; vy = 0`",
+    ),
     "lcg_mult": (1664525, "`s = (s*1664525 + 1013904223) & 0xFFFFFFFF`"),
     "lcg_inc": (1013904223, "`s = (s*1664525 + 1013904223) & 0xFFFFFFFF`"),
     "lcg_mask": (0xFFFFFFFF, "`& 0xFFFFFFFF`"),
@@ -61,8 +68,11 @@ FIELDS = ("sim_hz", "gravity", "speed", "jump", "ticks", "jumps")
 def spec_gap(dropped: Optional[List[str]] = None) -> List[str]:
     """Every field the port needs and the artefact does not state."""
     dropped = set(dropped or [])
-    return [name for name, (_value, source) in SPEC.items()
-            if source is None or name in dropped]
+    return [
+        name
+        for name, (_value, source) in SPEC.items()
+        if source is None or name in dropped
+    ]
 
 
 def tunables_for(manifest: Dict[str, Any]) -> Dict[str, Any]:
@@ -110,25 +120,29 @@ def run(t: Dict[str, Any]) -> Dict[str, Any]:
     """The tick, in the order SHX-R1 states. Anything reordered here changes the hash."""
     ticks, jumps = SPEC["ticks"][0], SPEC["jumps"][0]
     dt = 1.0 / float(t["sim_hz"])
-    speed, gravity, jump, arena = (float(t["speed"]), float(t["gravity"]),
-                                   float(t["jump"]), float(t["arena"]))
+    speed, gravity, jump, arena = (
+        float(t["speed"]),
+        float(t["gravity"]),
+        float(t["jump"]),
+        float(t["arena"]),
+    )
     orbs = orbit(t["seed"], arena, int(t["orbs"]))
-    x = y = z = vy = 0.0                     # z never moves; it is in the hash regardless
+    x = y = z = vy = 0.0  # z never moves; it is in the hash regardless
     taken = 0
     for tick in range(ticks):
-        ix = 1.0 if tick < ticks // 2 else -1.0          # 1. scripted input
-        if tick in jumps and y <= SPEC["jump_arm"][0]:    # 2. jump, before integration
+        ix = 1.0 if tick < ticks // 2 else -1.0  # 1. scripted input
+        if tick in jumps and y <= SPEC["jump_arm"][0]:  # 2. jump, before integration
             vy = jump
-        x = x + ix * speed * dt                          # 3. advance
+        x = x + ix * speed * dt  # 3. advance
         z = z + 0.0
-        vy = vy - gravity * dt                           # 4. gravity
-        y = y + vy * dt                                  # 5. integrate
-        if y < 0.0:                                      # 6. walls: clamp, not bounce
+        vy = vy - gravity * dt  # 4. gravity
+        y = y + vy * dt  # 5. integrate
+        if y < 0.0:  # 6. walls: clamp, not bounce
             y = 0.0
             vy = 0.0
         x = -arena if x < -arena else (arena if x > arena else x)
         z = -arena if z < -arena else (arena if z > arena else z)
-        for index, (ox, oz) in enumerate(orbs):          # 7. collection, after the move
+        for index, (ox, oz) in enumerate(orbs):  # 7. collection, after the move
             if taken & (1 << index):
                 continue
             dx, dz = x - ox, z - oz
@@ -136,7 +150,14 @@ def run(t: Dict[str, Any]) -> Dict[str, Any]:
             if dx * dx + dz * dz < radius * radius and y < SPEC["collect_ymax"][0]:
                 taken |= 1 << index
 
-    state = "%.4f,%.4f,%.4f,%.4f,%.4f,%d" % (x, y, z, vy, SPEC["reserved_slot"][0], taken)
+    state = "%.4f,%.4f,%.4f,%.4f,%.4f,%d" % (
+        x,
+        y,
+        z,
+        vy,
+        SPEC["reserved_slot"][0],
+        taken,
+    )
     return {"state": state, "digest": digest(state), "collected": taken, "orbs": orbs}
 
 
@@ -146,25 +167,32 @@ def main(argv: Optional[List[str]] = None) -> int:
     if "--drop" in argv:
         index = argv.index("--drop")
         dropped = [argv[index + 1]]
-        del argv[index:index + 2]
+        del argv[index : index + 2]
     positional = [a for a in argv if not a.startswith("--")]
 
-    shard_dir = Path(positional[0] if positional
-                     else Path(__file__).resolve().parent.parent
-                     / "docs/METTHEW/reference-shards/highend_duel")
+    shard_dir = Path(
+        positional[0]
+        if positional
+        else Path(__file__).resolve().parent.parent
+        / "docs/METTHEW/reference-shards/highend_duel"
+    )
     manifest = json.loads((shard_dir / "shard.json").read_text(encoding="utf-8"))
 
     print(f"shard      {manifest['id']}")
-    print(f"payload    {sum(f['size_bytes'] for f in manifest['files'])} bytes in "
-          f"{len(manifest['files'])} file(s)")
+    print(
+        f"payload    {sum(f['size_bytes'] for f in manifest['files'])} bytes in "
+        f"{len(manifest['files'])} file(s)"
+    )
 
     gap = spec_gap(dropped)
     if gap:
         print(f"SPEC-GAP   {len(gap)} field(s) the artefact does not state:")
         for name in gap:
             print(f"           - {name}")
-        print("REFUSED    a port cannot be written from this specification; no value "
-              "was inferred from either existing implementation.")
+        print(
+            "REFUSED    a port cannot be written from this specification; no value "
+            "was inferred from either existing implementation."
+        )
         return 3
 
     t = tunables_for(manifest)
@@ -172,8 +200,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     print(f"tunables   {json.dumps(t, sort_keys=True)}")
     print(f"state      {result['state']}")
     print(f"golden     {result['digest']}")
-    print(f"collected  {bin(result['collected']).count('1')} of {t['orbs']} orbs "
-          f"(bitmask {result['collected']})")
+    print(
+        f"collected  {bin(result['collected']).count('1')} of {t['orbs']} orbs "
+        f"(bitmask {result['collected']})"
+    )
     return 0
 
 

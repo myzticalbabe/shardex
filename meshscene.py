@@ -32,6 +32,7 @@ USAGE
         .live 180 --live .live/ops.json
     python Project_SHARDEX/meshscene.py --verify .live
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,8 +46,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-import ops as OPS            # noqa: E402
-from transubstantiate import FOCAL, ORBIT_TICKS, _fnv, _q   # noqa: E402
+import ops as OPS  # noqa: E402
+from transubstantiate import FOCAL, ORBIT_TICKS, _fnv, _q  # noqa: E402
 
 FIELD_SHAPE = "shardex-image-field-v1"
 MESH_SHAPE = "shardex-mesh-v1"
@@ -65,12 +66,14 @@ MIN_EDGE_MEAN = 6.0
 # field -> mesh
 # --------------------------------------------------------------------------- #
 
-def build_mesh(field: Dict[str, Any], neuron_cap: int = 1200, k: int = 4) -> Dict[str, Any]:
+
+def build_mesh(
+    field: Dict[str, Any], neuron_cap: int = 1200, k: int = 4
+) -> Dict[str, Any]:
     grid_w = int(field["grid"]["w"])
     grid_h = int(field["grid"]["h"])
     luma = field["luma"]
     hue = field["hue"]
-    cells = grid_w * grid_h
 
     step = 1
     while -(-grid_w // step) * -(-grid_h // step) > neuron_cap:
@@ -91,9 +94,16 @@ def build_mesh(field: Dict[str, Any], neuron_cap: int = 1200, k: int = 4) -> Dic
                         best = y * grid_w + x
             if best < 0 or best_luma <= 0:
                 continue
-            neurons.append([(bx + 0.5) * step, (by + 0.5) * step,
-                            best_luma / 255.0 * 8.0, best_luma, int(hue[best]),
-                            mass / 255.0])
+            neurons.append(
+                [
+                    (bx + 0.5) * step,
+                    (by + 0.5) * step,
+                    best_luma / 255.0 * 8.0,
+                    best_luma,
+                    int(hue[best]),
+                    mass / 255.0,
+                ]
+            )
 
     count = len(neurons)
     seen = set()
@@ -117,10 +127,16 @@ def build_mesh(field: Dict[str, Any], neuron_cap: int = 1200, k: int = 4) -> Dic
             synapses.append([a, b, weight])
     synapses.sort(key=lambda edge: (int(edge[0]), int(edge[1])))
 
-    return {"shape": MESH_SHAPE, "grid_w": grid_w, "grid_h": grid_h, "step": step,
-            "neurons": neurons, "synapses": synapses,
-            "field_sha256": field["source"]["sha256"],
-            "counts": {"neurons": len(neurons), "synapses": len(synapses)}}
+    return {
+        "shape": MESH_SHAPE,
+        "grid_w": grid_w,
+        "grid_h": grid_h,
+        "step": step,
+        "neurons": neurons,
+        "synapses": synapses,
+        "field_sha256": field["source"]["sha256"],
+        "counts": {"neurons": len(neurons), "synapses": len(synapses)},
+    }
 
 
 def fit_mesh(mesh: Dict[str, Any]) -> Dict[str, float]:
@@ -130,10 +146,12 @@ def fit_mesh(mesh: Dict[str, Any]) -> Dict[str, float]:
     if not xs:
         return {"cx": 0.0, "cy": 0.0, "cz": 0.0, "scale": 1.0}
     span = max(max(xs) - min(xs), max(ys) - min(ys), 1.0)
-    return {"cx": round((min(xs) + max(xs)) / 2.0, 4),
-            "cy": round((min(ys) + max(ys)) / 2.0, 4),
-            "cz": round((min(zs) + max(zs)) / 2.0, 4),
-            "scale": round(820.0 / span, 4)}
+    return {
+        "cx": round((min(xs) + max(xs)) / 2.0, 4),
+        "cy": round((min(ys) + max(ys)) / 2.0, 4),
+        "cz": round((min(zs) + max(zs)) / 2.0, 4),
+        "scale": round(820.0 / span, 4),
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -378,41 +396,66 @@ draw(0); requestAnimationFrame(function loop(){ requestAnimationFrame(loop); });
 """
 
 
-def forge(field_path: Path, out_dir: Path, neuron_cap: int = 1200, k: int = 4,
-          total_ticks: int = 12000) -> Tuple[int, Dict[str, Any]]:
+def forge(
+    field_path: Path,
+    out_dir: Path,
+    neuron_cap: int = 1200,
+    k: int = 4,
+    total_ticks: int = 12000,
+) -> Tuple[int, Dict[str, Any]]:
     field = json.loads(field_path.read_text(encoding="utf-8"))
     if field.get("shape") != FIELD_SHAPE:
-        return REFUSED, {"state": "WRONG-SHAPE", "reason": "%s is %r, expected %r"
-                         % (field_path, field.get("shape"), FIELD_SHAPE)}
+        return REFUSED, {
+            "state": "WRONG-SHAPE",
+            "reason": "%s is %r, expected %r"
+            % (field_path, field.get("shape"), FIELD_SHAPE),
+        }
     edges = field.get("edge") or []
     edge_mean = (sum(edges) / len(edges)) if edges else 0.0
     if edge_mean < MIN_EDGE_MEAN:
-        return REFUSED, {"state": "FLAT-FIELD", "reason":
-                         "mean edge energy %.2f < %.2f -- there is no structure to extrude, "
-                         "and a mesh built on noise is not a translation of an image"
-                         % (edge_mean, MIN_EDGE_MEAN)}
+        return REFUSED, {
+            "state": "FLAT-FIELD",
+            "reason": "mean edge energy %.2f < %.2f -- there is no structure to extrude, "
+            "and a mesh built on noise is not a translation of an image"
+            % (edge_mean, MIN_EDGE_MEAN),
+        }
     mesh = build_mesh(field, neuron_cap=neuron_cap, k=k)
     if not mesh["neurons"]:
         return REFUSED, {"state": "EMPTY-MESH", "reason": "every cell was black"}
     fit = fit_mesh(mesh)
     table = field["sine_q15"]
-    golden = {"shape": SCENE_SHAPE, "mesh_digest": OPS.mesh_digest(mesh),
-              "fit": fit, "total": total_ticks, "orbit": ORBIT_TICKS,
-              "states": {"t%d" % round(total_ticks * f): None
-                         for f in (0.25, 0.5, 0.75)},
-              "counts": mesh["counts"]}
+    golden = {
+        "shape": SCENE_SHAPE,
+        "mesh_digest": OPS.mesh_digest(mesh),
+        "fit": fit,
+        "total": total_ticks,
+        "orbit": ORBIT_TICKS,
+        "states": {"t%d" % round(total_ticks * f): None for f in (0.25, 0.5, 0.75)},
+        "counts": mesh["counts"],
+    }
     for key in golden["states"]:
         golden["states"][key] = PROJECT(mesh, int(key[1:]), fit)
-    prov = {"scene_shape": SCENE_SHAPE, "field_sha": field["source"]["sha256"],
-            "total": total_ticks, "orbit": ORBIT_TICKS, "focal": FOCAL,
-            "neuron_cap": neuron_cap, "k": k}
-    html = SCENE % {"shape": SCENE_SHAPE, "field_sha": field["source"]["sha256"],
-                    "prov": json.dumps(prov, separators=(",", ":")),
-                    "title": Path(field["source"]["path"]).stem,
-                    "field": json.dumps(field, separators=(",", ":")),
-                    "golden": json.dumps(golden, separators=(",", ":")),
-                    "neuron_cap": neuron_cap, "k": k,
-                    "focal": FOCAL, "orbit": ORBIT_TICKS}
+    prov = {
+        "scene_shape": SCENE_SHAPE,
+        "field_sha": field["source"]["sha256"],
+        "total": total_ticks,
+        "orbit": ORBIT_TICKS,
+        "focal": FOCAL,
+        "neuron_cap": neuron_cap,
+        "k": k,
+    }
+    html = SCENE % {
+        "shape": SCENE_SHAPE,
+        "field_sha": field["source"]["sha256"],
+        "prov": json.dumps(prov, separators=(",", ":")),
+        "title": Path(field["source"]["path"]).stem,
+        "field": json.dumps(field, separators=(",", ":")),
+        "golden": json.dumps(golden, separators=(",", ":")),
+        "neuron_cap": neuron_cap,
+        "k": k,
+        "focal": FOCAL,
+        "orbit": ORBIT_TICKS,
+    }
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "meshscene.html").write_text(html, encoding="utf-8")
     # the field is copied in, not referenced: replay needs the sine table, and a verify that
@@ -420,12 +463,20 @@ def forge(field_path: Path, out_dir: Path, neuron_cap: int = 1200, k: int = 4,
     # the first time the scene is moved.
     (out_dir / "field.json").write_text(json.dumps(field), encoding="utf-8")
     (out_dir / "mesh.json").write_text(json.dumps(mesh), encoding="utf-8")
-    (out_dir / "golden_live.json").write_text(json.dumps(golden, indent=1), encoding="utf-8")
-    return OK, {"state": "FORGED", "scene": str(out_dir / "meshscene.html"),
-                "neurons": mesh["counts"]["neurons"], "synapses": mesh["counts"]["synapses"],
-                "mesh_digest": golden["mesh_digest"], "states": golden["states"],
-                "table_entries": len(table), "edge_mean": round(edge_mean, 2),
-                "luma_std": float(field.get("variance") or 0.0)}
+    (out_dir / "golden_live.json").write_text(
+        json.dumps(golden, indent=1), encoding="utf-8"
+    )
+    return OK, {
+        "state": "FORGED",
+        "scene": str(out_dir / "meshscene.html"),
+        "neurons": mesh["counts"]["neurons"],
+        "synapses": mesh["counts"]["synapses"],
+        "mesh_digest": golden["mesh_digest"],
+        "states": golden["states"],
+        "table_entries": len(table),
+        "edge_mean": round(edge_mean, 2),
+        "luma_std": float(field.get("variance") or 0.0),
+    }
 
 
 def PROJECT(mesh: Dict[str, Any], tick: int, fit: Dict[str, float]) -> str:
@@ -445,7 +496,9 @@ def PROJECT(mesh: Dict[str, Any], tick: int, fit: Dict[str, float]) -> str:
         # were tried here first -- 1e-2, then _q's 1e-4 default -- and both times the
         # projection was right and the measurement disagreed. The digest compares numbers,
         # so the ruler is part of the contract, not an implementation detail.
-        points.append("%d,%d" % (_q(960 + rx * scale, 1000), _q(540 + wy * scale, 1000)))
+        points.append(
+            "%d,%d" % (_q(960 + rx * scale, 1000), _q(540 + wy * scale, 1000))
+        )
     return _fnv(";".join(points))
 
 
@@ -462,22 +515,32 @@ def verify(out_dir: Path) -> Tuple[int, Dict[str, Any]]:
     probe_path = out_dir / "browser_probe.json"
     for need in (scene, mesh_path):
         if not need.exists():
-            return COULD_NOT_RUN, {"state": "MISSING", "reason": "no %s in %s"
-                                   % (need.name, out_dir)}
+            return COULD_NOT_RUN, {
+                "state": "MISSING",
+                "reason": "no %s in %s" % (need.name, out_dir),
+            }
     field_path = out_dir / "field.json"
     if not field_path.exists():
-        return COULD_NOT_RUN, {"state": "MISSING", "reason": "no field.json -- the sine table "
-                                                             "lives there and replay needs it"}
+        return COULD_NOT_RUN, {
+            "state": "MISSING",
+            "reason": "no field.json -- the sine table "
+            "lives there and replay needs it",
+        }
     field = json.loads(field_path.read_text(encoding="utf-8"))
     table = field["sine_q15"]
     base = json.loads(mesh_path.read_text(encoding="utf-8"))
 
     if not applied_path.exists():
-        return REFUSED, {"state": "NO-LIVE-OPS", "reason":
-                         "no applied_ops.jsonl: this run recorded no mutation, so there is "
-                         "nothing to call mid-flight"}
-    records = [json.loads(line) for line in applied_path.read_text(encoding="utf-8").splitlines()
-               if line.strip()]
+        return REFUSED, {
+            "state": "NO-LIVE-OPS",
+            "reason": "no applied_ops.jsonl: this run recorded no mutation, so there is "
+            "nothing to call mid-flight",
+        }
+    records = [
+        json.loads(line)
+        for line in applied_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
     if not records:
         return REFUSED, {"state": "NO-LIVE-OPS", "reason": "applied_ops.jsonl is empty"}
 
@@ -486,22 +549,27 @@ def verify(out_dir: Path) -> Tuple[int, Dict[str, Any]]:
         try:
             current = OPS.apply_op(current, record["op"], table)
         except OPS.OpError as exc:
-            return REFUSED, {"state": "OP-INVALID", "reason": "seq %s: %s"
-                             % (record.get("seq"), exc)}
+            return REFUSED, {
+                "state": "OP-INVALID",
+                "reason": "seq %s: %s" % (record.get("seq"), exc),
+            }
         ours = OPS.mesh_digest(current)
         if ours != record["digest"]:
-            return REFUSED, {"state": "DIGEST-DIVERGENCE", "reason":
-                             "seq %s (%s): page %s, python %s"
-                             % (record.get("seq"), record["op"]["kind"],
-                                record["digest"], ours)}
+            return REFUSED, {
+                "state": "DIGEST-DIVERGENCE",
+                "reason": "seq %s (%s): page %s, python %s"
+                % (record.get("seq"), record["op"]["kind"], record["digest"], ours),
+            }
     picked_note = "absent"
     picked_path = out_dir / "picked.json"
     if any(record["op"]["kind"] == "touch" for record in records):
         if not picked_path.exists():
-            return REFUSED, {"state": "PICK-UNPROVENANCED", "reason":
-                             "the op log contains a touch op but there is no picked.json: an "
-                             "index typed by hand and an index clicked by a person look "
-                             "identical inside the op, so the provenance is required"}
+            return REFUSED, {
+                "state": "PICK-UNPROVENANCED",
+                "reason": "the op log contains a touch op but there is no picked.json: an "
+                "index typed by hand and an index clicked by a person look "
+                "identical inside the op, so the provenance is required",
+            }
         try:
             picked = json.loads(picked_path.read_text(encoding="utf-8"))
             index = int(picked["index"])
@@ -512,40 +580,56 @@ def verify(out_dir: Path) -> Tuple[int, Dict[str, Any]]:
             # A hand-edited provenance file is a refusal, not a traceback: the whole point of
             # this block is that the record can be checked, so an unreadable record fails the
             # check rather than crashing past it.
-            return REFUSED, {"state": "PICK-UNPROVENANCED", "reason":
-                             "picked.json is not a usable pick record (%s: %s)"
-                             % (type(exc).__name__, exc)}
-        used = [int(record["op"]["neuron"]) for record in records
-                if record["op"]["kind"] == "touch"]
+            return REFUSED, {
+                "state": "PICK-UNPROVENANCED",
+                "reason": "picked.json is not a usable pick record (%s: %s)"
+                % (type(exc).__name__, exc),
+            }
+        used = [
+            int(record["op"]["neuron"])
+            for record in records
+            if record["op"]["kind"] == "touch"
+        ]
         # EVERY touch op must be covered, not merely one of them. The first version checked
         # `index in used`, so a log with a genuine touch plus a hand-typed second touch passed;
         # the harness emits one pick per run, so the honest statement is exact equality.
         uncovered = [n for n in used if n != index]
         if uncovered:
-            return REFUSED, {"state": "PICK-UNPROVENANCED", "reason":
-                             "touch op(s) used neuron(s) %s with no pick record for them "
-                             "(the pick was neuron %d; the harness emits one pick per run, so a "
-                             "second target needs its own record, not a hand-typed index)"
-                             % (uncovered, index)}
+            return REFUSED, {
+                "state": "PICK-UNPROVENANCED",
+                "reason": "touch op(s) used neuron(s) %s with no pick record for them "
+                "(the pick was neuron %d; the harness emits one pick per run, so a "
+                "second target needs its own record, not a hand-typed index)"
+                % (uncovered, index),
+            }
         at_pick = base
         for record in records[:seq]:
             at_pick = OPS.apply_op(at_pick, record["op"], table)
         if OPS.mesh_digest(at_pick) != digest_at_pick:
-            return REFUSED, {"state": "PICK-MISMATCH", "reason":
-                             "picked.json says the mesh was %s at pick time; replaying to seq "
-                             "%d gives %s" % (digest_at_pick, seq, OPS.mesh_digest(at_pick))}
+            return REFUSED, {
+                "state": "PICK-MISMATCH",
+                "reason": "picked.json says the mesh was %s at pick time; replaying to seq "
+                "%d gives %s" % (digest_at_pick, seq, OPS.mesh_digest(at_pick)),
+            }
         if not 0 <= index < len(at_pick["neurons"]):
-            return REFUSED, {"state": "PICK-MISMATCH", "reason":
-                             "picked neuron %d is outside this mesh (0..%d)"
-                             % (index, len(at_pick["neurons"]) - 1)}
+            return REFUSED, {
+                "state": "PICK-MISMATCH",
+                "reason": "picked neuron %d is outside this mesh (0..%d)"
+                % (index, len(at_pick["neurons"]) - 1),
+            }
         node = at_pick["neurons"][index]
         here = [int(math.floor(float(node[k]) * OPS.Q + 0.5)) for k in (0, 1, 2)]
         if here != world:
-            return REFUSED, {"state": "PICK-MISMATCH", "reason":
-                             "neuron %d was at %s when picked; replay puts it at %s"
-                             % (index, world, here)}
+            return REFUSED, {
+                "state": "PICK-MISMATCH",
+                "reason": "neuron %d was at %s when picked; replay puts it at %s"
+                % (index, world, here),
+            }
         picked_note = "neuron %d from click %s, %.2f px from the cursor" % (
-            index, picked.get("click"), float(picked.get("distance_px") or 0.0))
+            index,
+            picked.get("click"),
+            float(picked.get("distance_px") or 0.0),
+        )
 
     final = OPS.mesh_digest(current)
     chain = OPS.chain_hash([record["op"] for record in records])
@@ -553,9 +637,11 @@ def verify(out_dir: Path) -> Tuple[int, Dict[str, Any]]:
     if probe_path.exists():
         probe = json.loads(probe_path.read_text(encoding="utf-8"))
         if probe.get("mesh_digest") and probe["mesh_digest"] != final:
-            return REFUSED, {"state": "PROBE-MISMATCH", "reason":
-                             "page reported final %s, replay produced %s"
-                             % (probe["mesh_digest"], final)}
+            return REFUSED, {
+                "state": "PROBE-MISMATCH",
+                "reason": "page reported final %s, replay produced %s"
+                % (probe["mesh_digest"], final),
+            }
         # BASE MESH + FIELD INTEGRITY, and REQUIRED rather than opportunistic. The probe
         # carries the base mesh digest and field sha256 the browser saw BEFORE any live op.
         # Measured 2026-11-02: both checks were written as `if probe.get(key)`, so a capture
@@ -563,51 +649,70 @@ def verify(out_dir: Path) -> Tuple[int, Dict[str, Any]]:
         # in field.json then left `--verify` printing VERIFIED, exit 0, with the guard present
         # in the code and doing nothing. A probe that does not name its inputs is not evidence
         # about them: absence is a refusal here, not an exemption.
-        absent = [key for key in ("base_mesh_digest", "field_sha256") if not probe.get(key)]
+        absent = [
+            key for key in ("base_mesh_digest", "field_sha256") if not probe.get(key)
+        ]
         if absent:
-            return REFUSED, {"state": "PROBE-UNPROVENANCED", "reason":
-                             "browser_probe.json names no %s: this capture predates the "
-                             "input hashes, so nothing in it can prove which mesh and field "
-                             "the page rendered. Re-capture rather than trust it."
-                             % " or ".join(absent)}
+            return REFUSED, {
+                "state": "PROBE-UNPROVENANCED",
+                "reason": "browser_probe.json names no %s: this capture predates the "
+                "input hashes, so nothing in it can prove which mesh and field "
+                "the page rendered. Re-capture rather than trust it."
+                % " or ".join(absent),
+            }
         base_digest = OPS.mesh_digest(json.loads(mesh_path.read_text(encoding="utf-8")))
         if probe["base_mesh_digest"] != base_digest:
-            return REFUSED, {"state": "PROBE-BASE-MISMATCH", "reason":
-                             "probe base mesh %s does not match mesh.json %s"
-                             % (probe["base_mesh_digest"][:16], base_digest[:16])}
+            return REFUSED, {
+                "state": "PROBE-BASE-MISMATCH",
+                "reason": "probe base mesh %s does not match mesh.json %s"
+                % (probe["base_mesh_digest"][:16], base_digest[:16]),
+            }
         field_sha = _field_sha256(field_path)
         if probe["field_sha256"] != field_sha:
-            return REFUSED, {"state": "PROBE-FIELD-MISMATCH", "reason":
-                             "probe field sha256 %s does not match field.json %s"
-                             % (probe["field_sha256"][:16], field_sha[:16])}
+            return REFUSED, {
+                "state": "PROBE-FIELD-MISMATCH",
+                "reason": "probe field sha256 %s does not match field.json %s"
+                % (probe["field_sha256"][:16], field_sha[:16]),
+            }
         # PAGE PROVENANCE. A probe says "the page that produced these frames computed X". Without
         # the page's identity that is unfalsifiable: edit the scene (or the ops file) after the
         # capture and the probe still reads as evidence for edits nobody ever rendered. The html
         # hash pins the page text; the op list pins what the page was told to do.
         prov = probe.get("provenance") or {}
         if not prov:
-            return REFUSED, {"state": "PROBE-UNPROVENANCED", "reason":
-                             "browser_probe.json carries no provenance: re-capture, so the probe "
-                             "names the page it came from"}
+            return REFUSED, {
+                "state": "PROBE-UNPROVENANCED",
+                "reason": "browser_probe.json carries no provenance: re-capture, so the probe "
+                "names the page it came from",
+            }
         here_sha = hashlib.sha256(scene.read_bytes()).hexdigest()
         if prov.get("html_sha") != here_sha:
-            return REFUSED, {"state": "PROBE-STALE-PAGE", "reason":
-                             "meshscene.html is %s now; the probe was captured from %s. The "
-                             "frames and the page on disk are not the same artifact."
-                             % (here_sha[:16], str(prov.get("html_sha"))[:16])}
+            return REFUSED, {
+                "state": "PROBE-STALE-PAGE",
+                "reason": "meshscene.html is %s now; the probe was captured from %s. The "
+                "frames and the page on disk are not the same artifact."
+                % (here_sha[:16], str(prov.get("html_sha"))[:16]),
+            }
         sent = list(prov.get("applied_ops") or [])
         logged = [record["op"] for record in records]
         if sent != logged:
-            return REFUSED, {"state": "PROBE-STALE-OPS", "reason":
-                             "the page applied %d op(s), applied_ops.jsonl logs %d, and the "
-                             "sequences differ: the log was edited after the capture"
-                             % (len(sent), len(logged))}
-    return OK, {"state": "VERIFIED", "ops": len(records), "op_chain": chain,
-                "final_mesh_digest": final,
-                "neurons": len(current["neurons"]), "synapses": len(current["synapses"]),
-                "per_op": [record["digest"] for record in records],
-                "picked": picked_note,
-                "browser_probe": probe.get("states") or "absent"}
+            return REFUSED, {
+                "state": "PROBE-STALE-OPS",
+                "reason": "the page applied %d op(s), applied_ops.jsonl logs %d, and the "
+                "sequences differ: the log was edited after the capture"
+                % (len(sent), len(logged)),
+            }
+    return OK, {
+        "state": "VERIFIED",
+        "ops": len(records),
+        "op_chain": chain,
+        "final_mesh_digest": final,
+        "neurons": len(current["neurons"]),
+        "synapses": len(current["synapses"]),
+        "per_op": [record["digest"] for record in records],
+        "picked": picked_note,
+        "browser_probe": probe.get("states") or "absent",
+    }
 
 
 PROGRAM_SHAPE = "shardex-shardscript-v1"
@@ -631,42 +736,59 @@ def export_program(out_dir: Path) -> Tuple[int, Dict[str, Any]]:
     applied_path = out_dir / "applied_ops.jsonl"
     for need in (field_path, mesh_path, applied_path):
         if not need.exists():
-            return COULD_NOT_RUN, {"state": "MISSING", "reason": "no %s in %s"
-                                   % (need.name, out_dir)}
+            return COULD_NOT_RUN, {
+                "state": "MISSING",
+                "reason": "no %s in %s" % (need.name, out_dir),
+            }
     base = json.loads(mesh_path.read_text(encoding="utf-8"))
-    records = [json.loads(line) for line in applied_path.read_text(encoding="utf-8").splitlines()
-               if line.strip()]
+    records = [
+        json.loads(line)
+        for line in applied_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
     if not records:
-        return REFUSED, {"state": "NO-LIVE-OPS", "reason":
-                         "applied_ops.jsonl is empty: an empty program verifies trivially and "
-                         "proves nothing"}
+        return REFUSED, {
+            "state": "NO-LIVE-OPS",
+            "reason": "applied_ops.jsonl is empty: an empty program verifies trivially and "
+            "proves nothing",
+        }
     program = {
         "shape": PROGRAM_SHAPE,
         "field": field_path.name,
         "field_sha256": _field_sha256(field_path),
         "base_mesh": mesh_path.name,
         "base_mesh_digest": OPS.mesh_digest(base),
-        "ops": [{"seq": record.get("seq", index), "op": record["op"],
-                 "digest": record["digest"]} for index, record in enumerate(records)],
+        "ops": [
+            {
+                "seq": record.get("seq", index),
+                "op": record["op"],
+                "digest": record["digest"],
+            }
+            for index, record in enumerate(records)
+        ],
         "chain": OPS.chain_hash([record["op"] for record in records]),
     }
     target = out_dir / "shardscript.json"
     target.write_text(json.dumps(program, indent=2), encoding="utf-8")
-    return OK, {"state": "PROGRAM", "program": str(target), "ops": len(program["ops"]),
-                "chain": program["chain"],
-                "base_mesh_digest": program["base_mesh_digest"],
-                "field_sha256": program["field_sha256"]}
+    return OK, {
+        "state": "PROGRAM",
+        "program": str(target),
+        "ops": len(program["ops"]),
+        "chain": program["chain"],
+        "base_mesh_digest": program["base_mesh_digest"],
+        "field_sha256": program["field_sha256"],
+    }
 
 
 def verify_program(script_path: Path) -> Tuple[int, Dict[str, Any]]:
     """Replay a shardscript from the artifacts it names, and refuse a doctored op.
 
-    What this establishes: every digest in the program recomputes from `field.json` +
-    the base mesh, in order, and the chain over the op payloads is the one recorded. What it
-does NOT establish: that the program is the one the page ran. An editor who rewrites an op
-    AND recomputes every digest and the chain has written a different valid program, not
-    forged this one -- the chain is this program's name, so compare it with the name the
-    page reported (`browser_probe.json`) rather than trusting the file that carries it.
+        What this establishes: every digest in the program recomputes from `field.json` +
+        the base mesh, in order, and the chain over the op payloads is the one recorded. What it
+    does NOT establish: that the program is the one the page ran. An editor who rewrites an op
+        AND recomputes every digest and the chain has written a different valid program, not
+        forged this one -- the chain is this program's name, so compare it with the name the
+        page reported (`browser_probe.json`) rather than trusting the file that carries it.
     """
     if not script_path.exists():
         return COULD_NOT_RUN, {"state": "MISSING", "reason": "no %s" % script_path}
@@ -675,80 +797,119 @@ does NOT establish: that the program is the one the page ran. An editor who rewr
     except json.JSONDecodeError as exc:
         return REFUSED, {"state": "PROGRAM-UNREADABLE", "reason": str(exc)}
     if program.get("shape") != PROGRAM_SHAPE:
-        return REFUSED, {"state": "PROGRAM-UNREADABLE", "reason":
-                         "shape is %r, expected %r" % (program.get("shape"), PROGRAM_SHAPE)}
+        return REFUSED, {
+            "state": "PROGRAM-UNREADABLE",
+            "reason": "shape is %r, expected %r"
+            % (program.get("shape"), PROGRAM_SHAPE),
+        }
     here = script_path.parent
     field_path = here / str(program.get("field") or "field.json")
     mesh_path = here / str(program.get("base_mesh") or "mesh.json")
     for need in (field_path, mesh_path):
         if not need.exists():
-            return COULD_NOT_RUN, {"state": "MISSING", "reason":
-                                   "the program names %s but it is not beside it" % need.name}
+            return COULD_NOT_RUN, {
+                "state": "MISSING",
+                "reason": "the program names %s but it is not beside it" % need.name,
+            }
 
     # The field is the sine table every op reads. If it is not the file the program was
     # written against, every digest downstream is a comparison between two different meshes.
     field_sha = _field_sha256(field_path)
     if field_sha != program.get("field_sha256"):
-        return REFUSED, {"state": "FIELD-MISMATCH", "reason":
-                         "field.json is %s, the program was written against %s"
-                         % (field_sha[:16], str(program.get("field_sha256"))[:16])}
+        return REFUSED, {
+            "state": "FIELD-MISMATCH",
+            "reason": "field.json is %s, the program was written against %s"
+            % (field_sha[:16], str(program.get("field_sha256"))[:16]),
+        }
     field = json.loads(field_path.read_text(encoding="utf-8"))
     table = field["sine_q15"]
 
     base = json.loads(mesh_path.read_text(encoding="utf-8"))
     base_digest = OPS.mesh_digest(base)
     if base_digest != program.get("base_mesh_digest"):
-        return REFUSED, {"state": "BASE-MISMATCH", "reason":
-                         "the base mesh is %s, the program starts from %s"
-                         % (base_digest[:16], str(program.get("base_mesh_digest"))[:16])}
+        return REFUSED, {
+            "state": "BASE-MISMATCH",
+            "reason": "the base mesh is %s, the program starts from %s"
+            % (base_digest[:16], str(program.get("base_mesh_digest"))[:16]),
+        }
 
     ops = program.get("ops") or []
     if not ops:
-        return REFUSED, {"state": "PROGRAM-EMPTY", "reason":
-                         "a program with no ops reproduces the base mesh and proves nothing"}
+        return REFUSED, {
+            "state": "PROGRAM-EMPTY",
+            "reason": "a program with no ops reproduces the base mesh and proves nothing",
+        }
 
     current = base
     replayed: List[str] = []
     for index, entry in enumerate(ops):
         if not isinstance(entry, dict) or "op" not in entry:
-            return REFUSED, {"state": "PROGRAM-UNREADABLE", "reason":
-                             "op %d is not {seq, op, digest}" % index}
+            return REFUSED, {
+                "state": "PROGRAM-UNREADABLE",
+                "reason": "op %d is not {seq, op, digest}" % index,
+            }
         if entry.get("seq") is not None and int(entry["seq"]) != index:
-            return REFUSED, {"state": "SEQ-GAP", "reason":
-                             "op at position %d claims seq %s: a program is a sequence, and a "
-                             "hole in it is an op someone removed" % (index, entry["seq"])}
+            return REFUSED, {
+                "state": "SEQ-GAP",
+                "reason": "op at position %d claims seq %s: a program is a sequence, and a "
+                "hole in it is an op someone removed" % (index, entry["seq"]),
+            }
         try:
             current = OPS.apply_op(current, entry["op"], table)
         except OPS.OpError as exc:
-            return REFUSED, {"state": "OP-INVALID", "reason": "seq %d: %s" % (index, exc)}
+            return REFUSED, {
+                "state": "OP-INVALID",
+                "reason": "seq %d: %s" % (index, exc),
+            }
         ours = OPS.mesh_digest(current)
         if ours != entry.get("digest"):
-            return REFUSED, {"state": "DIGEST-DIVERGENCE", "reason":
-                             "seq %d (%s): recorded %s, replay %s -- the op was edited, or the "
-                             "field it reads is not the one it was written against"
-                             % (index, entry["op"].get("kind"), entry.get("digest"), ours)}
+            return REFUSED, {
+                "state": "DIGEST-DIVERGENCE",
+                "reason": "seq %d (%s): recorded %s, replay %s -- the op was edited, or the "
+                "field it reads is not the one it was written against"
+                % (index, entry["op"].get("kind"), entry.get("digest"), ours),
+            }
         replayed.append(ours)
 
     chain = OPS.chain_hash([entry["op"] for entry in ops])
     if chain != program.get("chain"):
-        return REFUSED, {"state": "CHAIN-MISMATCH", "reason":
-                         "the ops hash to %s, the program claims %s"
-                         % (chain[:16], str(program.get("chain"))[:16])}
-    return OK, {"state": "VERIFIED", "ops": len(ops), "chain": chain,
-                "base_mesh_digest": base_digest, "field_sha256": field_sha,
-                "final_mesh_digest": replayed[-1], "per_op": replayed}
+        return REFUSED, {
+            "state": "CHAIN-MISMATCH",
+            "reason": "the ops hash to %s, the program claims %s"
+            % (chain[:16], str(program.get("chain"))[:16]),
+        }
+    return OK, {
+        "state": "VERIFIED",
+        "ops": len(ops),
+        "chain": chain,
+        "base_mesh_digest": base_digest,
+        "field_sha256": field_sha,
+        "final_mesh_digest": replayed[-1],
+        "per_op": replayed,
+    }
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description="Image -> mesh of neurons and synapses -> a scene that is mutated while "
-                    "it renders.")
-    parser.add_argument("--forge", default="", help="the field.json from tools/sample_image.js")
+        "it renders."
+    )
+    parser.add_argument(
+        "--forge", default="", help="the field.json from tools/sample_image.js"
+    )
     parser.add_argument("--verify", default="", help="a forged meshlive directory")
-    parser.add_argument("--export-program", default="", metavar="DIR",
-                        help="write shardscript.json from a forged directory's op log")
-    parser.add_argument("--verify-program", default="", metavar="SHARDSCRIPT",
-                        help="replay a shardscript.json from the artifacts it names")
+    parser.add_argument(
+        "--export-program",
+        default="",
+        metavar="DIR",
+        help="write shardscript.json from a forged directory's op log",
+    )
+    parser.add_argument(
+        "--verify-program",
+        default="",
+        metavar="SHARDSCRIPT",
+        help="replay a shardscript.json from the artifacts it names",
+    )
     parser.add_argument("--out", default="", help="output directory")
     parser.add_argument("--neuron-cap", type=int, default=1200)
     parser.add_argument("--k", type=int, default=4)
@@ -762,12 +923,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print("REFUSED %s: %s" % (info.get("state"), info.get("reason")))
             return rc
         print("FORGED %s" % info["scene"])
-        print("  %d neurons, %d synapses, mesh digest %s"
-              % (info["neurons"], info["synapses"], info["mesh_digest"]))
+        print(
+            "  %d neurons, %d synapses, mesh digest %s"
+            % (info["neurons"], info["synapses"], info["mesh_digest"])
+        )
         print("  golden states %s" % info["states"])
-        print("  sine table %d entries (from the field artifact, not recomputed here)"
-              % info["table_entries"])
-        print("  structure: edge_mean %s, luma std %s" % (info["edge_mean"], info["luma_std"]))
+        print(
+            "  sine table %d entries (from the field artifact, not recomputed here)"
+            % info["table_entries"]
+        )
+        print(
+            "  structure: edge_mean %s, luma std %s"
+            % (info["edge_mean"], info["luma_std"])
+        )
         return OK
 
     if args.export_program:
@@ -777,14 +945,23 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return rc
         print("PROGRAM %s" % info["program"])
         print("  %d ops, chain %s" % (info["ops"], info["chain"]))
-        print("  base mesh %s, field %s" % (info["base_mesh_digest"], info["field_sha256"][:16]))
+        print(
+            "  base mesh %s, field %s"
+            % (info["base_mesh_digest"], info["field_sha256"][:16])
+        )
         return OK
 
     if args.verify_program:
         rc, info = verify_program(Path(args.verify_program))
         print("%s" % info.get("state"))
-        for key in ("reason", "ops", "chain", "base_mesh_digest", "field_sha256",
-                    "final_mesh_digest"):
+        for key in (
+            "reason",
+            "ops",
+            "chain",
+            "base_mesh_digest",
+            "field_sha256",
+            "final_mesh_digest",
+        ):
             if key in info:
                 print("  %s: %s" % (key, info[key]))
         if info.get("per_op"):
@@ -794,8 +971,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.verify:
         rc, info = verify(Path(args.verify))
         print("%s" % info.get("state"))
-        for key in ("reason", "ops", "op_chain", "final_mesh_digest", "neurons", "synapses",
-                    "picked"):
+        for key in (
+            "reason",
+            "ops",
+            "op_chain",
+            "final_mesh_digest",
+            "neurons",
+            "synapses",
+            "picked",
+        ):
             if key in info:
                 print("  %s: %s" % (key, info[key]))
         if info.get("per_op"):

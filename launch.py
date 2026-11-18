@@ -15,6 +15,7 @@ Usage:
     python Project_SHARDEX/launch.py --spectate results/ --port 8080
     python Project_SHARDEX/launch.py --selftest
 """
+
 from __future__ import annotations
 
 import argparse
@@ -61,8 +62,9 @@ try:
         Ed25519PrivateKey,
         Ed25519PublicKey,
     )
+
     ED25519_AVAILABLE = True
-except ImportError:                                    # pragma: no cover
+except ImportError:  # pragma: no cover
     ED25519_AVAILABLE = False
 
 KEY_FILE = "author_ed25519.pem"
@@ -88,15 +90,16 @@ def load_author_key() -> Optional["Ed25519PrivateKey"]:
     unusable = ""
     try:
         if path.exists():
-            key = serialization.load_pem_private_key(path.read_bytes(),
-                                                    password=None)
+            key = serialization.load_pem_private_key(path.read_bytes(), password=None)
         path.parent.mkdir(parents=True, exist_ok=True)
         key = Ed25519PrivateKey.generate()
-        path.write_bytes(key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption(),
-        ))
+        path.write_bytes(
+            key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+        )
         # No try/except: Windows has no POSIX mode bits so the call is skipped
         # there, and on a POSIX host a chmod that fails is a real error -- the
         # key would be readable by other accounts. It propagates to the caller
@@ -117,14 +120,19 @@ def load_author_key() -> Optional["Ed25519PrivateKey"]:
 
 def author_pubkey_hex(key: "Ed25519PrivateKey") -> str:
     """32 bytes of public key, lowercase hex -- the identity a result carries."""
-    return key.public_key().public_bytes(
-        encoding=serialization.Encoding.Raw,
-        format=serialization.PublicFormat.Raw,
-    ).hex()
+    return (
+        key.public_key()
+        .public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+        .hex()
+    )
 
 
-def sign_result(result: Dict[str, Any], key: Optional["Ed25519PrivateKey"] = None
-                ) -> Optional[Dict[str, str]]:
+def sign_result(
+    result: Dict[str, Any], key: Optional["Ed25519PrivateKey"] = None
+) -> Optional[Dict[str, str]]:
     """Sign `result_sha256`. Returns the signature block, or None if unsigned.
 
     Signs the hex DIGEST, not the dict: the digest is what every other check in
@@ -160,19 +168,24 @@ def verify_signature(signature: Any, digest: str) -> Tuple[bool, str]:
     if signature["alg"] != "ed25519":
         return False, "unsupported signature algorithm %r" % (signature["alg"],)
     if signature.get("signed_over") != "result_sha256":
-        return False, ("signature claims to cover %r; this verifier only covers "
-                       "result_sha256" % (signature.get("signed_over"),))
+        return False, (
+            "signature claims to cover %r; this verifier only covers "
+            "result_sha256" % (signature.get("signed_over"),)
+        )
     if not ED25519_AVAILABLE:
-        return False, ("cannot verify an ed25519 signature: the cryptography "
-                       "package is not installed here, so this result is "
-                       "unverified rather than valid")
+        return False, (
+            "cannot verify an ed25519 signature: the cryptography "
+            "package is not installed here, so this result is "
+            "unverified rather than valid"
+        )
     # One verdict variable and one return: a `return False` inside an except
     # block is the except-return-default anti-pattern, and the point of this
     # function is that every refusal names its cause.
     failure = ""
     try:
         pub = Ed25519PublicKey.from_public_bytes(
-            bytes.fromhex(str(signature["author_pubkey"])))
+            bytes.fromhex(str(signature["author_pubkey"]))
+        )
         pub.verify(bytes.fromhex(str(signature["value"])), digest.encode("ascii"))
     except (ValueError, TypeError) as exc:
         failure = "signature is malformed (%s)" % exc
@@ -181,18 +194,24 @@ def verify_signature(signature: Any, digest: str) -> Tuple[bool, str]:
     if failure:
         return False, failure
 
-    trusted = [p.strip().lower() for p in
-               os.environ.get("SHARDEX_TRUSTED_PUBKEYS", "").split(",") if p.strip()]
+    trusted = [
+        p.strip().lower()
+        for p in os.environ.get("SHARDEX_TRUSTED_PUBKEYS", "").split(",")
+        if p.strip()
+    ]
     if trusted and str(signature["author_pubkey"]).lower() not in trusted:
-        return False, ("signed by %s, which is not in SHARDEX_TRUSTED_PUBKEYS "
-                       "(the bytes are intact; the signer is not trusted)"
-                       % str(signature["author_pubkey"])[:16])
+        return False, (
+            "signed by %s, which is not in SHARDEX_TRUSTED_PUBKEYS "
+            "(the bytes are intact; the signer is not trusted)"
+            % str(signature["author_pubkey"])[:16]
+        )
     return True, "signature ok (author %s)" % str(signature["author_pubkey"])[:16]
 
 
 @dataclass
 class BracketEntry:
     """One entry in a bracket."""
+
     shard_id: str
     shard_path: str
     config: Dict[str, Any] = field(default_factory=dict)
@@ -216,6 +235,7 @@ class BracketEntry:
 @dataclass
 class Round:
     """One round of a bracket."""
+
     round_num: int
     entries: List[BracketEntry] = field(default_factory=list)
     results: List[Dict[str, Any]] = field(default_factory=list)
@@ -226,6 +246,7 @@ class Round:
 @dataclass
 class Bracket:
     """A tournament bracket."""
+
     bracket_id: str = ""
     format: str = "single-elimination"  # or "round-robin"
     entries: List[BracketEntry] = field(default_factory=list)
@@ -262,12 +283,14 @@ def _artifact_identity(shard_path: Path, shard: dict) -> Tuple[str, List[str]]:
         try:
             actual = hashlib.sha256((base / name).read_bytes()).hexdigest()
         except OSError:
-            mismatches.append("%s: declared %s, bytes unreadable"
-                              % (name, declared[:16] or "(none)"))
+            mismatches.append(
+                "%s: declared %s, bytes unreadable" % (name, declared[:16] or "(none)")
+            )
             continue
         if declared and declared != actual:
-            mismatches.append("%s: declared %s, bytes %s"
-                              % (name, declared[:16], actual[:16]))
+            mismatches.append(
+                "%s: declared %s, bytes %s" % (name, declared[:16], actual[:16])
+            )
         rows.append("%s:%s" % (name, actual))
     if not rows:
         return "", mismatches
@@ -302,25 +325,31 @@ def _shard_op_chain(shard_path: Path) -> str:
     try:
         program = json.loads(script.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise ValueError("refusing to hash %s: shardscript.json is not JSON (%s)"
-                         % (script, exc)) from exc
+        raise ValueError(
+            "refusing to hash %s: shardscript.json is not JSON (%s)" % (script, exc)
+        ) from exc
     except OSError as exc:
-        raise ValueError("refusing to hash %s: shardscript.json is unreadable (%s)"
-                         % (script, exc)) from exc
+        raise ValueError(
+            "refusing to hash %s: shardscript.json is unreadable (%s)" % (script, exc)
+        ) from exc
     if not isinstance(program, dict):
-        raise ValueError("refusing to hash %s: shardscript.json is not an object"
-                         % script)
+        raise ValueError(
+            "refusing to hash %s: shardscript.json is not an object" % script
+        )
     # `chain` is what `meshscene.export_program` always writes, so a program without one
     # is malformed rather than empty -- and `or ""` here would have made it byte-identical
     # to a shard that ships no program at all.
     chain = program.get("chain")
     if not isinstance(chain, str) or not chain:
-        raise ValueError("refusing to hash %s: shardscript.json carries no chain" % script)
+        raise ValueError(
+            "refusing to hash %s: shardscript.json carries no chain" % script
+        )
     return chain
 
 
-def golden_digest(config: Dict[str, Any], op_chain: str = "",
-                  content_sha256: str = "") -> str:
+def golden_digest(
+    config: Dict[str, Any], op_chain: str = "", content_sha256: str = ""
+) -> str:
     """The 16-hex digest a round records, over everything that decides what runs.
 
     `config` is the tournament knobs (including the seed derived from the artifact's
@@ -332,8 +361,14 @@ def golden_digest(config: Dict[str, Any], op_chain: str = "",
     if not op_chain and not content_sha256:
         body = json.dumps(config, sort_keys=True)
     else:
-        body = json.dumps({"config": config, "op_chain": op_chain or "",
-                           "content_sha256": content_sha256 or ""}, sort_keys=True)
+        body = json.dumps(
+            {
+                "config": config,
+                "op_chain": op_chain or "",
+                "content_sha256": content_sha256 or "",
+            },
+            sort_keys=True,
+        )
     return hashlib.sha256(body.encode()).hexdigest()[:16]
 
 
@@ -369,12 +404,19 @@ def create_bracket(shard_paths: List[Path], fmt: str = "single-elimination") -> 
         # another directory is the same game, and a hash that renamed it could not be
         # compared between two machines. `id` is the content-addressed name METTHEW
         # manifests carry (`highend-duel@sha256:...`); a path is the last resort.
-        shard_id = (shard.get("shard_id") or shard.get("name") or shard.get("id")
-                    or str(sp))
+        shard_id = (
+            shard.get("shard_id") or shard.get("name") or shard.get("id") or str(sp)
+        )
         content_id, mismatches = _artifact_identity(sp, shard)
         config = {
-            "sim_hz": 60, "gravity": 18.0, "speed": 6.0, "jump": 7.0,
-            "arena": 8.0, "orbs": 3, "difficulty": 1.0, "seed": 0,
+            "sim_hz": 60,
+            "gravity": 18.0,
+            "speed": 6.0,
+            "jump": 7.0,
+            "arena": 8.0,
+            "orbs": 3,
+            "difficulty": 1.0,
+            "seed": 0,
         }
         # Derive seed from the artifact's bytes. The earlier version read a top-level
         # `content_sha256`/`sha256` the METTHEW manifests do not have, so both reference
@@ -382,15 +424,17 @@ def create_bracket(shard_paths: List[Path], fmt: str = "single-elimination") -> 
         shard_hash = shard.get("content_sha256", shard.get("sha256", "")) or content_id
         if shard_hash:
             config["seed"] = int(shard_hash[:8], 16) % (2**32)
-        entries.append(BracketEntry(
-            shard_id=shard_id,
-            shard_path=str(sp),
-            config=config,
-            seed=config["seed"],
-            content_sha256=content_id,
-            artifact_mismatches=mismatches,
-            op_chain=_shard_op_chain(sp),
-        ))
+        entries.append(
+            BracketEntry(
+                shard_id=shard_id,
+                shard_path=str(sp),
+                config=config,
+                seed=config["seed"],
+                content_sha256=content_id,
+                artifact_mismatches=mismatches,
+                op_chain=_shard_op_chain(sp),
+            )
+        )
 
     bracket = Bracket(
         bracket_id="bracket-%d" % int(time.time()),
@@ -406,12 +450,12 @@ def create_bracket(shard_paths: List[Path], fmt: str = "single-elimination") -> 
         for i in range(len(entries)):
             for j in range(i + 1, len(entries)):
                 pairs.append((entries[i], entries[j]))
-        
+
         # Organize pairs into rounds: max 2 matches per round (4 entries = 2 simultaneous matches)
         max_matches_per_round = max(1, len(entries) // 2)
         round_num = 0
         for i in range(0, len(pairs), max_matches_per_round):
-            round_pairs = pairs[i:i + max_matches_per_round]
+            round_pairs = pairs[i : i + max_matches_per_round]
             round_entries = []
             for e1, e2 in round_pairs:
                 round_entries.extend([e1, e2])
@@ -424,8 +468,9 @@ def create_bracket(shard_paths: List[Path], fmt: str = "single-elimination") -> 
     return bracket
 
 
-def run_round(bracket: Bracket, round_num: int,
-              key: Optional["Ed25519PrivateKey"] = None) -> Round:
+def run_round(
+    bracket: Bracket, round_num: int, key: Optional["Ed25519PrivateKey"] = None
+) -> Round:
     """Execute a round: compute golden hash for each entry's config.
 
     Each result is signed when an author key is available. `key` is passed in by
@@ -495,9 +540,9 @@ def _compose_params(entry: BracketEntry, shard: dict) -> Dict[str, Any]:
     return params
 
 
-def compose_bracket(bracket: Bracket,
-                    resolutions: Optional[Dict[str, Any]] = None
-                    ) -> Tuple[int, Dict[str, Any]]:
+def compose_bracket(
+    bracket: Bracket, resolutions: Optional[Dict[str, Any]] = None
+) -> Tuple[int, Dict[str, Any]]:
     """Two shards, one space. Returns a hash both inputs determine, or a refusal.
 
     `resolutions` is `{rule: value}` as declared on the command line. A value must be one
@@ -511,21 +556,33 @@ def compose_bracket(bracket: Bracket,
     for entry in bracket.entries:
         shard = _load_shard(Path(entry.shard_path)) or {}
         params = _compose_params(entry, shard)
-        content_id = entry.content_sha256 or _artifact_sha256(Path(entry.shard_path), shard)
+        content_id = entry.content_sha256 or _artifact_sha256(
+            Path(entry.shard_path), shard
+        )
         golden = golden_digest(entry.config, entry.op_chain, content_id)
-        inputs.append({"shard_id": entry.shard_id, "shard_path": entry.shard_path,
-                       "config": entry.config, "golden_hash": golden,
-                       "op_chain": entry.op_chain,
-                       "content_sha256": content_id,
-                       "state_sha256": (shard.get("golden_run") or {}).get("state_sha256", ""),
-                       "params": params})
+        inputs.append(
+            {
+                "shard_id": entry.shard_id,
+                "shard_path": entry.shard_path,
+                "config": entry.config,
+                "golden_hash": golden,
+                "op_chain": entry.op_chain,
+                "content_sha256": content_id,
+                "state_sha256": (shard.get("golden_run") or {}).get("state_sha256", ""),
+                "params": params,
+            }
+        )
         params_by_id[entry.shard_id] = params
-        mismatch_by_id[entry.shard_id] = list(getattr(entry, "artifact_mismatches", []) or [])
+        mismatch_by_id[entry.shard_id] = list(
+            getattr(entry, "artifact_mismatches", []) or []
+        )
 
     if len(inputs) < 2:
-        return REFUSED, {"state": "NOT-A-COMPOSITION",
-                         "reason": "%d input(s): a shared space needs at least two shards"
-                                   % len(inputs)}
+        return REFUSED, {
+            "state": "NOT-A-COMPOSITION",
+            "reason": "%d input(s): a shared space needs at least two shards"
+            % len(inputs),
+        }
 
     nameless = [i["shard_id"] for i in inputs if not i["content_sha256"]]
     if nameless:
@@ -533,10 +590,12 @@ def compose_bracket(bracket: Bracket,
         # manifest declares no file digests contributes only its id string, so editing that
         # shard's bytes would leave the hash unmoved -- measured 2026-11-02 by appending a
         # comment to a payload file and watching the same digest come back.
-        return REFUSED, {"state": "INPUT-HAS-NO-ARTIFACT-IDENTITY",
-                         "reason": "%s declare(s) no `files` digests, so its bytes cannot "
-                                   "move the composed hash; fix the manifest, do not hash the "
-                                   "shard id and call it identity" % ", ".join(nameless)}
+        return REFUSED, {
+            "state": "INPUT-HAS-NO-ARTIFACT-IDENTITY",
+            "reason": "%s declare(s) no `files` digests, so its bytes cannot "
+            "move the composed hash; fix the manifest, do not hash the "
+            "shard id and call it identity" % ", ".join(nameless),
+        }
 
     lying = {sid: rows for sid, rows in mismatch_by_id.items() if rows}
     if lying:
@@ -546,15 +605,19 @@ def compose_bracket(bracket: Bracket,
         # name would disagree with the author. Refuse; re-author the manifest instead.
         return REFUSED, {
             "state": "ARTIFACT-DOES-NOT-MATCH-MANIFEST",
-            "reason": "; ".join("%s: %s" % (sid, ", ".join(rows))
-                                for sid, rows in sorted(lying.items())),
+            "reason": "; ".join(
+                "%s: %s" % (sid, ", ".join(rows)) for sid, rows in sorted(lying.items())
+            ),
             "mismatches": lying,
         }
 
     disagreements: Dict[str, Dict[str, Any]] = {}
     for rule in COMPOSE_RULES:
         values = {sid: p[rule] for sid, p in params_by_id.items() if rule in p}
-        if len(values) > 1 and len({json.dumps(v, sort_keys=True) for v in values.values()}) > 1:
+        if (
+            len(values) > 1
+            and len({json.dumps(v, sort_keys=True) for v in values.values()}) > 1
+        ):
             disagreements[rule] = values
 
     unresolved = [rule for rule in disagreements if rule not in resolutions]
@@ -562,9 +625,9 @@ def compose_bracket(bracket: Bracket,
         return REFUSED, {
             "state": "UNRESOLVED-DISAGREEMENT",
             "reason": "two arenas in one space disagree about %s; declare each with "
-                      "--resolve rule=value (a value one input already states) -- averaging "
-                      "would compose a third world neither author signed"
-                      % ", ".join("%s %s" % (rule, disagreements[rule]) for rule in unresolved),
+            "--resolve rule=value (a value one input already states) -- averaging "
+            "would compose a third world neither author signed"
+            % ", ".join("%s %s" % (rule, disagreements[rule]) for rule in unresolved),
             "disagreements": disagreements,
             "declared": sorted(resolutions),
         }
@@ -573,19 +636,25 @@ def compose_bracket(bracket: Bracket,
     if declared_but_unknown:
         # Not an error in the hash, but it is a claim about a rule that was never in
         # dispute. Refused so a resolution cannot silently mean "I assumed this value".
-        return REFUSED, {"state": "RESOLUTION-WITHOUT-DISAGREEMENT",
-                         "reason": "--resolve names %s, which no input disagrees about; a "
-                                   "resolution must settle a stated difference"
-                                   % ", ".join(sorted(declared_but_unknown))}
+        return REFUSED, {
+            "state": "RESOLUTION-WITHOUT-DISAGREEMENT",
+            "reason": "--resolve names %s, which no input disagrees about; a "
+            "resolution must settle a stated difference"
+            % ", ".join(sorted(declared_but_unknown)),
+        }
 
     resolved: Dict[str, Dict[str, Any]] = {}
     for rule, values in disagreements.items():
         chosen = resolutions[rule]
-        if not any(json.dumps(chosen, sort_keys=True) == json.dumps(v, sort_keys=True)
-                   for v in values.values()):
-            return REFUSED, {"state": "RESOLUTION-NOT-DECLARED-BY-ANY-INPUT",
-                             "reason": "%s=%r is not a value any input states (%s)"
-                                       % (rule, chosen, values)}
+        if not any(
+            json.dumps(chosen, sort_keys=True) == json.dumps(v, sort_keys=True)
+            for v in values.values()
+        ):
+            return REFUSED, {
+                "state": "RESOLUTION-NOT-DECLARED-BY-ANY-INPUT",
+                "reason": "%s=%r is not a value any input states (%s)"
+                % (rule, chosen, values),
+            }
         resolved[rule] = {"values": values, "chosen": chosen, "source": "declared"}
 
     space: Dict[str, Any] = {}
@@ -597,20 +666,33 @@ def compose_bracket(bracket: Bracket,
         if stated:
             space[rule] = stated[0]
 
-    body = {"shape": COMPOSE_SHAPE, "inputs": inputs, "space": space,
-            "resolved": resolved}
+    body = {
+        "shape": COMPOSE_SHAPE,
+        "inputs": inputs,
+        "space": space,
+        "resolved": resolved,
+    }
     # Canonical input order. The space is a property of the SET of shards, so hashing the
     # list as given made `--bracket a b` and `--bracket b a` name the same world two
     # different ways (measured 2026-11-02: a6e9ee90d587bc78 vs 655f303bcad23b8d over an
     # identical `space`) -- two sessions composing the same pair could not compare hashes.
-    canonical_inputs = sorted([[i["shard_id"], i["content_sha256"], i["golden_hash"],
-                                i["state_sha256"]]
-                               for i in inputs], key=lambda row: row[0])
-    composed_hash = hashlib.sha256(json.dumps(
-        {"space": space,
-         "resolved": {rule: entry["chosen"] for rule, entry in resolved.items()},
-         "inputs": canonical_inputs},
-        sort_keys=True).encode()).hexdigest()[:16]
+    canonical_inputs = sorted(
+        [
+            [i["shard_id"], i["content_sha256"], i["golden_hash"], i["state_sha256"]]
+            for i in inputs
+        ],
+        key=lambda row: row[0],
+    )
+    composed_hash = hashlib.sha256(
+        json.dumps(
+            {
+                "space": space,
+                "resolved": {rule: entry["chosen"] for rule, entry in resolved.items()},
+                "inputs": canonical_inputs,
+            },
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()[:16]
     body["composed_hash"] = composed_hash
     body["state"] = "COMPOSED"
     return OK, body
@@ -630,18 +712,23 @@ def verify_result(result_path: Path) -> Tuple[bool, str]:
     for r in results:
         config = r.get("config", {})
         claimed = r.get("golden_hash", "")
-        recomputed = golden_digest(config, r.get("op_chain", ""),
-                                   r.get("content_sha256", ""))
+        recomputed = golden_digest(
+            config, r.get("op_chain", ""), r.get("content_sha256", "")
+        )
         if recomputed != claimed:
-            return False, f"golden hash mismatch for {r.get('shard_id')}: claimed={claimed} recomputed={recomputed}"
+            return (
+                False,
+                f"golden hash mismatch for {r.get('shard_id')}: claimed={claimed} recomputed={recomputed}",
+            )
 
         # Verify result sha256. The signature is stripped too: it is added AFTER
         # the digest is computed, so leaving it in would make every signed result
         # fail its own hash -- a check that refuses correct data is worse than no
         # check, because it gets switched off.
         if "result_sha256" in r:
-            result_copy = {k: v for k, v in r.items()
-                           if k not in ("result_sha256", "signature")}
+            result_copy = {
+                k: v for k, v in r.items() if k not in ("result_sha256", "signature")
+            }
             computed_sha = hashlib.sha256(
                 json.dumps(result_copy, sort_keys=True).encode()
             ).hexdigest()
@@ -649,14 +736,17 @@ def verify_result(result_path: Path) -> Tuple[bool, str]:
                 return False, f"result tampered: {r.get('shard_id')}"
 
         if "signature" in r:
-            ok_sig, sig_msg = verify_signature(r["signature"],
-                                              str(r.get("result_sha256", "")))
+            ok_sig, sig_msg = verify_signature(
+                r["signature"], str(r.get("result_sha256", ""))
+            )
             if not ok_sig:
                 return False, "%s: %s" % (r.get("shard_id"), sig_msg)
 
     signed = sum(1 for r in results if r.get("signature"))
-    return True, (f"verified {len(results)} results "
-                  f"({signed} signed, {len(results) - signed} unsigned)")
+    return True, (
+        f"verified {len(results)} results "
+        f"({signed} signed, {len(results) - signed} unsigned)"
+    )
 
 
 def spectator_view(results_dir: Path) -> Dict[str, Any]:
@@ -671,35 +761,42 @@ def spectator_view(results_dir: Path) -> Dict[str, Any]:
     for f in sorted(results_dir.glob("round_*.json")):
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
-            rounds.append({
-                "round": data.get("round_num", 0),
-                "entries": len(data.get("results", [])),
-                "results": [
-                    {"shard": r.get("shard_id", "?"),
-                     "golden": r.get("golden_hash", "?"),
-                     "config": r.get("config", {})}
-                    for r in data.get("results", [])
-                ],
-            })
+            rounds.append(
+                {
+                    "round": data.get("round_num", 0),
+                    "entries": len(data.get("results", [])),
+                    "results": [
+                        {
+                            "shard": r.get("shard_id", "?"),
+                            "golden": r.get("golden_hash", "?"),
+                            "config": r.get("config", {}),
+                        }
+                        for r in data.get("results", [])
+                    ],
+                }
+            )
         except (json.JSONDecodeError, OSError) as exc:
-            unreadable.append({"file": f.name, "reason": "%s: %s"
-                               % (type(exc).__name__, exc)})
-    return {"rounds": rounds, "total_rounds": len(rounds),
-            "unreadable": unreadable}
+            unreadable.append(
+                {"file": f.name, "reason": "%s: %s" % (type(exc).__name__, exc)}
+            )
+    return {"rounds": rounds, "total_rounds": len(rounds), "unreadable": unreadable}
 
 
 def selftest() -> Tuple[int, List[str]]:
     """Self-test: create a bracket, run a round, verify, spectate."""
     lines = []
-    ok = True
 
     # Create test shards
     import tempfile
+
     tmp = Path(tempfile.mkdtemp(prefix="shardex_launch_"))
     shard_dir = tmp / "shards"
     shard_dir.mkdir()
     for i in range(4):
-        shard = {"shard_id": f"shard-{i}", "content_sha256": hashlib.sha256(f"shard-{i}".encode()).hexdigest()}
+        shard = {
+            "shard_id": f"shard-{i}",
+            "content_sha256": hashlib.sha256(f"shard-{i}".encode()).hexdigest(),
+        }
         (shard_dir / f"shard-{i}").mkdir()
         (shard_dir / f"shard-{i}" / "shard.json").write_text(json.dumps(shard))
 
@@ -722,8 +819,9 @@ def selftest() -> Tuple[int, List[str]]:
     if signing_key is not None:
         assert all("signature" in r for r in rnd.results), "a result came back unsigned"
         assert all(r["signature"]["alg"] == "ed25519" for r in rnd.results)
-        assert all(r["signature"]["signed_over"] == "result_sha256"
-                   for r in rnd.results)
+        assert all(
+            r["signature"]["signed_over"] == "result_sha256" for r in rnd.results
+        )
         lines.append("PASS L4 run_round (4 results, each signed over result_sha256)")
     else:
         # No primitive, no claim. The old line said "all signed" here.
@@ -742,20 +840,32 @@ def selftest() -> Tuple[int, List[str]]:
     same_knobs = {"seed": 1, "sim_hz": 60}
     chain_a = golden_digest(same_knobs, "a" * 64, "c" * 64)
     chain_b = golden_digest(same_knobs, "b" * 64, "c" * 64)
-    assert chain_a != chain_b, "two op-chains, one digest: the program is not in the name"
-    assert golden_digest(same_knobs, "a" * 64, "c" * 64) == chain_a, "digest is not stable"
-    legacy = hashlib.sha256(json.dumps(same_knobs, sort_keys=True).encode()).hexdigest()[:16]
-    assert golden_digest(same_knobs) == legacy, "a result written before op_chain existed fails"
+    assert (
+        chain_a != chain_b
+    ), "two op-chains, one digest: the program is not in the name"
+    assert (
+        golden_digest(same_knobs, "a" * 64, "c" * 64) == chain_a
+    ), "digest is not stable"
+    legacy = hashlib.sha256(
+        json.dumps(same_knobs, sort_keys=True).encode()
+    ).hexdigest()[:16]
+    assert (
+        golden_digest(same_knobs) == legacy
+    ), "a result written before op_chain existed fails"
     lines.append("PASS L4 golden hash covers op_chain (legacy records still verify)")
 
     prog_dir = tmp / "programs"
     for name, chain in (("one", "1" * 64), ("two", "2" * 64)):
         d = prog_dir / name
         d.mkdir(parents=True)
-        (d / "shard.json").write_text(json.dumps(
-            {"shard_id": "same-artifact", "files": [], "content_sha256": "f" * 64}))
-        (d / "shardscript.json").write_text(json.dumps({"shape": "shardex-shardscript-v1",
-                                                         "chain": chain, "ops": []}))
+        (d / "shard.json").write_text(
+            json.dumps(
+                {"shard_id": "same-artifact", "files": [], "content_sha256": "f" * 64}
+            )
+        )
+        (d / "shardscript.json").write_text(
+            json.dumps({"shape": "shardex-shardscript-v1", "chain": chain, "ops": []})
+        )
     prog_bracket = create_bracket([prog_dir / "one", prog_dir / "two"])
     assert [e.op_chain for e in prog_bracket.entries] == ["1" * 64, "2" * 64]
     prog_round = run_round(prog_bracket, 0, key=None)
@@ -844,12 +954,23 @@ def main(argv=None) -> int:
     ap.add_argument("--verify", default="", help="result file to verify")
     ap.add_argument("--spectate", default="", help="results directory")
     ap.add_argument("--out", default="", help="output path")
-    ap.add_argument("--format", default="single-elimination",
-                    choices=["single-elimination", "round-robin"])
-    ap.add_argument("--compose", action="store_true",
-                    help="put the --bracket entries in one space and print its hash")
-    ap.add_argument("--resolve", action="append", default=[], metavar="RULE=VALUE",
-                    help="settle a disagreement between composed shards, explicitly")
+    ap.add_argument(
+        "--format",
+        default="single-elimination",
+        choices=["single-elimination", "round-robin"],
+    )
+    ap.add_argument(
+        "--compose",
+        action="store_true",
+        help="put the --bracket entries in one space and print its hash",
+    )
+    ap.add_argument(
+        "--resolve",
+        action="append",
+        default=[],
+        metavar="RULE=VALUE",
+        help="settle a disagreement between composed shards, explicitly",
+    )
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args(argv)
 
@@ -858,7 +979,9 @@ def main(argv=None) -> int:
         for line in lines:
             print(line)
         print("")
-        print("SELFTEST %s (%d check(s))" % ("OK" if code == OK else "FAILED", len(lines)))
+        print(
+            "SELFTEST %s (%d check(s))" % ("OK" if code == OK else "FAILED", len(lines))
+        )
         return code
 
     if args.bracket and args.compose:
@@ -872,14 +995,18 @@ def main(argv=None) -> int:
                 resolutions[rule.strip()] = json.loads(raw.strip())
             except json.JSONDecodeError:
                 resolutions[rule.strip()] = raw.strip()
-        composed_bracket = create_bracket([Path(p) for p in args.bracket], fmt=args.format)
+        composed_bracket = create_bracket(
+            [Path(p) for p in args.bracket], fmt=args.format
+        )
         code, doc = compose_bracket(composed_bracket, resolutions)
         if code != OK:
             print("REFUSED: %s\n  %s" % (doc["state"], doc["reason"]))
             return code
         for rule, entry in doc["resolved"].items():
-            print("  resolved %-8s %r (declared; inputs said %s)"
-                  % (rule, entry["chosen"], entry["values"]))
+            print(
+                "  resolved %-8s %r (declared; inputs said %s)"
+                % (rule, entry["chosen"], entry["values"])
+            )
         print("COMPOSED %d shards into one space" % len(doc["inputs"]))
         print("  space        %s" % json.dumps(doc["space"], sort_keys=True))
         print("  composed     %s" % doc["composed_hash"])
@@ -893,7 +1020,9 @@ def main(argv=None) -> int:
         bracket = create_bracket(paths, fmt=args.format)
         out = Path(args.out) if args.out else Path("bracket.json")
         out.write_text(json.dumps(asdict(bracket), indent=2, default=str))
-        print(f"CREATED bracket: {len(bracket.entries)} entries, format={bracket.format}")
+        print(
+            f"CREATED bracket: {len(bracket.entries)} entries, format={bracket.format}"
+        )
         print(f"  written to {out}")
         return OK
 
@@ -910,7 +1039,9 @@ def main(argv=None) -> int:
         if read_error:
             print(f"REFUSED: cannot read bracket {bracket_path}: {read_error}")
             return REFUSED
-        bracket = Bracket(**{k: v for k, v in data.items() if k in Bracket.__dataclass_fields__})
+        bracket = Bracket(
+            **{k: v for k, v in data.items() if k in Bracket.__dataclass_fields__}
+        )
         # Reconstruct entries
         bracket.entries = [BracketEntry(**e) for e in data.get("entries", [])]
         bracket.rounds = []
@@ -928,15 +1059,21 @@ def main(argv=None) -> int:
             if rnd is None:
                 continue
             result_file = out_dir / f"round_{i}.json"
-            result_file.write_text(json.dumps({"round_num": i, "results": rnd.results}, indent=2))
+            result_file.write_text(
+                json.dumps({"round_num": i, "results": rnd.results}, indent=2)
+            )
             signed = sum(1 for r in rnd.results if r.get("signature"))
-            print(f"ROUND {i}: {len(rnd.results)} results ({signed} signed), "
-                  f"written to {result_file}")
+            print(
+                f"ROUND {i}: {len(rnd.results)} results ({signed} signed), "
+                f"written to {result_file}"
+            )
             if signed < len(rnd.results):
                 # Loud, and specific: an unsigned result is a result nobody can
                 # attribute, and the fix is a key path, not a retry.
-                print("  UNSIGNED: no author key (SHARDEX_KEY_DIR=%s); these "
-                      "results carry a hash but no signer" % key_dir())
+                print(
+                    "  UNSIGNED: no author key (SHARDEX_KEY_DIR=%s); these "
+                    "results carry a hash but no signer" % key_dir()
+                )
 
         bracket.status = "completed"
         bracket_file = out_dir / "bracket.json"

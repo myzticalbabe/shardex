@@ -21,11 +21,12 @@ from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from typing import Optional
 import json
-import sys
+
 
 @dataclass
 class RequiemEntry:
     """A single death record."""
+
     what: str
     when: str
     why: str
@@ -36,8 +37,10 @@ class RequiemEntry:
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2)
 
+
 # The ledger — append only, never delete
 REQUIEM: list[RequiemEntry] = []
+
 
 def record_death(
     what: str,
@@ -58,6 +61,7 @@ def record_death(
     REQUIEM.append(entry)
     return entry
 
+
 def print_requiem() -> None:
     """Print all recorded deaths."""
     if not REQUIEM:
@@ -73,6 +77,7 @@ def print_requiem() -> None:
             print(f"NEXT:  {entry.successor}")
         if entry.artifacts:
             print(f"REFS:  {', '.join(entry.artifacts)}")
+
 
 # Example usage (remove when adding real entries):
 if __name__ == "__main__":

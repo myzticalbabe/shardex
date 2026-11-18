@@ -40,40 +40,97 @@ from pathlib import Path
 VERSION = "1.0.0"
 
 TEXT_SUFFIXES = {
-    ".md", ".markdown", ".txt", ".rst",
-    ".py", ".js", ".ts", ".tsx", ".jsx", ".mjs", ".cjs",
-    ".html", ".htm", ".css", ".scss",
-    ".yml", ".yaml", ".json", ".toml", ".ini", ".cfg",
-    ".sh", ".bash", ".ps1", ".bat", ".cmd",
+    ".md",
+    ".markdown",
+    ".txt",
+    ".rst",
+    ".py",
+    ".js",
+    ".ts",
+    ".tsx",
+    ".jsx",
+    ".mjs",
+    ".cjs",
+    ".html",
+    ".htm",
+    ".css",
+    ".scss",
+    ".yml",
+    ".yaml",
+    ".json",
+    ".toml",
+    ".ini",
+    ".cfg",
+    ".sh",
+    ".bash",
+    ".ps1",
+    ".bat",
+    ".cmd",
 }
 
 EXCLUDED_DIRS = {
-    ".git", ".hg", ".svn", "node_modules", "__pycache__", ".mypy_cache",
-    ".pytest_cache", ".ruff_cache", ".tox", "venv", ".venv", "env",
-    ".venv-314t", "build", "dist", "site-packages", ".egg-info",
-    "skills.pkg-archive", "archived", "_archive",
+    ".git",
+    ".hg",
+    ".svn",
+    "node_modules",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tox",
+    "venv",
+    ".venv",
+    "env",
+    ".venv-314t",
+    "build",
+    "dist",
+    "site-packages",
+    ".egg-info",
+    "skills.pkg-archive",
+    "archived",
+    "_archive",
 }
 
 MAX_FILE_BYTES = 2_000_000
 
 # (pattern, severity, why)
 TERMS = [
-    (re.compile(r"\bwhitelist(s|ed|ing)?\b", re.I), "medium",
-     "allowlist/denylist is the neutral pair"),
-    (re.compile(r"\bblacklist(s|ed|ing)?\b", re.I), "medium",
-     "allowlist/denylist is the neutral pair"),
-    (re.compile(r"\bgrandfather(ed|ing)?\b", re.I), "medium",
-     "'legacy exemption' says the same thing without the historical referent"),
-    (re.compile(r"\bman[-\s]?hours\b", re.I), "medium",
-     "'person-hours' or 'engineer-hours'"),
-    (re.compile(r"\bman[-\s]?months\b", re.I), "low",
-     "'person-months'"),
-    (re.compile(r"\bhe/she\b|\bs/he\b", re.I), "low",
-     "'they' reads better and covers everyone"),
-    (re.compile(r"\bsanity[-\s]?check(s|ed|ing)?\b", re.I), "low",
-     "'smoke check' or 'quick check'"),
-    (re.compile(r"\bdummy\s+(value|variable|data)\b", re.I), "low",
-     "'placeholder' or 'sample'"),
+    (
+        re.compile(r"\bwhitelist(s|ed|ing)?\b", re.I),
+        "medium",
+        "allowlist/denylist is the neutral pair",
+    ),
+    (
+        re.compile(r"\bblacklist(s|ed|ing)?\b", re.I),
+        "medium",
+        "allowlist/denylist is the neutral pair",
+    ),
+    (
+        re.compile(r"\bgrandfather(ed|ing)?\b", re.I),
+        "medium",
+        "'legacy exemption' says the same thing without the historical referent",
+    ),
+    (
+        re.compile(r"\bman[-\s]?hours\b", re.I),
+        "medium",
+        "'person-hours' or 'engineer-hours'",
+    ),
+    (re.compile(r"\bman[-\s]?months\b", re.I), "low", "'person-months'"),
+    (
+        re.compile(r"\bhe/she\b|\bs/he\b", re.I),
+        "low",
+        "'they' reads better and covers everyone",
+    ),
+    (
+        re.compile(r"\bsanity[-\s]?check(s|ed|ing)?\b", re.I),
+        "low",
+        "'smoke check' or 'quick check'",
+    ),
+    (
+        re.compile(r"\bdummy\s+(value|variable|data)\b", re.I),
+        "low",
+        "'placeholder' or 'sample'",
+    ),
 ]
 
 SUPPRESS = re.compile(r"audit:\s*ignore", re.I)
@@ -88,7 +145,8 @@ def iter_files(root: Path):
     """Yield candidate files, skipping vendored and generated trees."""
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [
-            d for d in dirnames
+            d
+            for d in dirnames
             if d.lower() not in EXCLUDED_DIRS and not d.startswith(".")
         ]
         for name in filenames:
@@ -117,38 +175,47 @@ def scan_file(path: Path, root: Path):
         for pattern, severity, why in TERMS:
             match = pattern.search(line)
             if match:
-                findings.append({
-                    "file": rel,
-                    "line": lineno,
-                    "severity": severity,
-                    "rule": "terminology",
-                    "match": match.group(0),
-                    "why": why,
-                })
+                findings.append(
+                    {
+                        "file": rel,
+                        "line": lineno,
+                        "severity": severity,
+                        "rule": "terminology",
+                        "match": match.group(0),
+                        "why": why,
+                    }
+                )
 
     if path.suffix.lower() in {".html", ".htm"} and HTML_HINT.search(text):
         first = text[:4000]
         if not LANG_ATTR.search(first):
-            findings.append({
-                "file": rel,
-                "line": 1,
-                "severity": "high",
-                "rule": "html-lang",
-                "match": "<html>",
-                "why": "a screen reader picks its pronunciation from lang=",
-            })
+            findings.append(
+                {
+                    "file": rel,
+                    "line": 1,
+                    "severity": "high",
+                    "rule": "html-lang",
+                    "match": "<html>",
+                    "why": "a screen reader picks its pronunciation from lang=",
+                }
+            )
     return findings
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="Inclusion audit: terminology and document language.")
+        description="Inclusion audit: terminology and document language."
+    )
     parser.add_argument("--path", default=".", help="tree to audit")
-    parser.add_argument("--fail-on", default="high",
-                        choices=["high", "medium", "low", "never"],
-                        help="lowest severity that fails the run (default: high)")
-    parser.add_argument("--json", dest="json_path", default=None,
-                        help="write the full report here")
+    parser.add_argument(
+        "--fail-on",
+        default="high",
+        choices=["high", "medium", "low", "never"],
+        help="lowest severity that fails the run (default: high)",
+    )
+    parser.add_argument(
+        "--json", dest="json_path", default=None, help="write the full report here"
+    )
     parser.add_argument("--quiet", action="store_true", help="counts only")
     args = parser.parse_args(argv)
 
@@ -168,26 +235,38 @@ def main(argv=None):
         counts[f["severity"]] += 1
 
     if not args.quiet:
-        for f in sorted(findings, key=lambda x: (-SEVERITY_RANK[x["severity"]],
-                                                 x["file"], x["line"])):
-            print(f"{f['severity']:6s} {f['file']}:{f['line']}  "
-                  f"[{f['rule']}] {f['match']!r} -> {f['why']}")
+        for f in sorted(
+            findings,
+            key=lambda x: (-SEVERITY_RANK[x["severity"]], x["file"], x["line"]),
+        ):
+            print(
+                f"{f['severity']:6s} {f['file']}:{f['line']}  "
+                f"[{f['rule']}] {f['match']!r} -> {f['why']}"
+            )
 
     print(f"audit_inclusion {VERSION}: scanned {scanned} files under {root}")
-    print(f"  findings: high={counts['high']} medium={counts['medium']} "
-          f"low={counts['low']}  (total {len(findings)})")
+    print(
+        f"  findings: high={counts['high']} medium={counts['medium']} "
+        f"low={counts['low']}  (total {len(findings)})"
+    )
     print(f"  fail-on={args.fail_on}")
 
     if args.json_path:
-        Path(args.json_path).write_text(json.dumps({
-            "tool": "audit_inclusion",
-            "version": VERSION,
-            "root": str(root),
-            "files_scanned": scanned,
-            "counts": counts,
-            "fail_on": args.fail_on,
-            "findings": findings,
-        }, indent=2), encoding="utf-8")
+        Path(args.json_path).write_text(
+            json.dumps(
+                {
+                    "tool": "audit_inclusion",
+                    "version": VERSION,
+                    "root": str(root),
+                    "files_scanned": scanned,
+                    "counts": counts,
+                    "fail_on": args.fail_on,
+                    "findings": findings,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
     threshold = FAIL_ON_RANK[args.fail_on]
     failing = [f for f in findings if SEVERITY_RANK[f["severity"]] >= threshold]

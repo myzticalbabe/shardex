@@ -6,6 +6,7 @@ The negative control is the point. An extractor that "succeeds" on a source with
 deterministic clock manufactures a translation out of a guess, and nothing downstream can
 tell. So the suite asserts the refusal as hard as it asserts the extraction.
 """
+
 from __future__ import annotations
 
 import json
@@ -54,7 +55,9 @@ def test_prng_matches_the_js_implementation():
     assert got == [0.064762, 0.821390, 0.421255, 0.051588, 0.205913, 0.544268]
 
 
-@pytest.mark.skipif(not ANIMATION.exists(), reason="the 2D animation is not in this tree")
+@pytest.mark.skipif(
+    not ANIMATION.exists(), reason="the 2D animation is not in this tree"
+)
 def test_extracts_the_real_animation_with_line_evidence():
     rules = T.extract(ANIMATION)
     assert rules["shape"] == T.RULES_SHAPE
@@ -102,9 +105,13 @@ def test_verify_refuses_a_hand_edited_rule(tmp_path):
     rules_path.write_text(json.dumps(T.extract(source)), encoding="utf-8")
     rc, _info = T.forge(rules_path, tmp_path / "scene")
     assert rc == T.OK
-    mutated = json.loads((tmp_path / "scene" / "rules.json").read_text(encoding="utf-8"))
+    mutated = json.loads(
+        (tmp_path / "scene" / "rules.json").read_text(encoding="utf-8")
+    )
     mutated["fractal"]["len_shrink_base"] = 0.99
-    (tmp_path / "scene" / "rules.json").write_text(json.dumps(mutated), encoding="utf-8")
+    (tmp_path / "scene" / "rules.json").write_text(
+        json.dumps(mutated), encoding="utf-8"
+    )
     rc, refused = T.verify(tmp_path / "scene")
     assert rc == T.REFUSED
     assert refused["state"] == "TAMPERED"
@@ -116,9 +123,16 @@ def test_bind_shard_refuses_a_shard_that_does_not_hold_the_source(tmp_path):
     rules_path = tmp_path / "rules.json"
     rules_path.write_text(json.dumps(T.extract(source)), encoding="utf-8")
     shard = tmp_path / "shard.json"
-    shard.write_text(json.dumps({"genre": "doc-only", "entrypoint": "",
-                                 "files": [{"path": "other.html", "sha256": "0" * 64}]}),
-                     encoding="utf-8")
+    shard.write_text(
+        json.dumps(
+            {
+                "genre": "doc-only",
+                "entrypoint": "",
+                "files": [{"path": "other.html", "sha256": "0" * 64}],
+            }
+        ),
+        encoding="utf-8",
+    )
     rc, refused = T.bind_shard(rules_path, shard)
     assert rc == T.REFUSED
     assert refused["state"] == "SOURCE-NOT-IN-SHARD"
@@ -133,10 +147,16 @@ def test_bind_shard_records_the_link_when_the_source_is_present(tmp_path):
     rules_path = tmp_path / "rules.json"
     rules_path.write_text(json.dumps(rules), encoding="utf-8")
     shard = tmp_path / "shard.json"
-    shard.write_text(json.dumps({"genre": "doc-only", "entrypoint": "",
-                                 "files": [{"path": "anim.html",
-                                            "sha256": rules["source"]["sha256"]}]}),
-                     encoding="utf-8")
+    shard.write_text(
+        json.dumps(
+            {
+                "genre": "doc-only",
+                "entrypoint": "",
+                "files": [{"path": "anim.html", "sha256": rules["source"]["sha256"]}],
+            }
+        ),
+        encoding="utf-8",
+    )
     rc, info = T.bind_shard(rules_path, shard)
     assert rc == T.OK, info
     doc = json.loads(shard.read_text(encoding="utf-8"))
@@ -179,7 +199,10 @@ def test_predict_falsifies_a_literal_phase_boundary(tmp_path):
     rules = _rules_from(ANIMATION, tmp_path / "rules.json")
     _, _, by_name = _predict(rules)
     assert by_name["phases"]["state"] == "FALSIFIED"
-    assert "9000" in by_name["phases"]["observed"] and "line 220" in by_name["phases"]["observed"]
+    assert (
+        "9000" in by_name["phases"]["observed"]
+        and "line 220" in by_name["phases"]["observed"]
+    )
 
 
 def test_predict_control_refuses_a_hook_that_never_draws(tmp_path):
@@ -191,7 +214,9 @@ def test_predict_control_refuses_a_hook_that_never_draws(tmp_path):
     src = tmp_path / "nodraw.html"
     text = ANIMATION.read_text(encoding="utf-8")
     mutated = text.replace("VCLOCK=ms; draw(ms);", "VCLOCK=ms;")
-    assert mutated != text, "fixture no longer contains the draw(ms) call the control removes"
+    assert (
+        mutated != text
+    ), "fixture no longer contains the draw(ms) call the control removes"
     src.write_text(mutated, encoding="utf-8")
     rules = _rules_from(src, tmp_path / "rules.json")
     rc, doc, by_name = _predict(rules)
@@ -204,6 +229,7 @@ def test_predict_control_refuses_a_hook_that_never_draws(tmp_path):
 # --------------------------------------------------------------------------- #
 # evidence: a rule that cannot name its line is not extracted from anything
 # --------------------------------------------------------------------------- #
+
 
 def test_every_rule_cites_a_line_that_says_it(tmp_path):
     """The 10 limbs used to share the `LIMBS = [` line and three fractal rules carried

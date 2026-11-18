@@ -44,6 +44,7 @@ USAGE
     python Project_SHARDEX/transubstantiate.py --verify .transub
     python Project_SHARDEX/transubstantiate.py --selftest
 """
+
 from __future__ import annotations
 
 import argparse
@@ -65,7 +66,7 @@ OK, REFUSED, COULD_NOT_RUN = 0, 1, 2
 #: Camera constants. Fixed, because a golden run whose camera is derived from the thing
 #: under test proves only that the camera is consistent with itself.
 FOCAL = 1400.0
-ORBIT_TICKS = 720          # one full yaw revolution
+ORBIT_TICKS = 720  # one full yaw revolution
 #: Ticks the golden run is evaluated at. The first is inside GROW, the second inside LABEL,
 #: the third inside HOLD -- one per phase, so a phase-timing bug cannot hide.
 GOLDEN_FRACTIONS = (0.25, 0.75, 0.98)
@@ -74,6 +75,7 @@ GOLDEN_FRACTIONS = (0.25, 0.75, 0.98)
 # --------------------------------------------------------------------------- #
 # extraction
 # --------------------------------------------------------------------------- #
+
 
 def _line_of(text: str, match: "re.Match[str]") -> int:
     return text.count("\n", 0, match.start()) + 1
@@ -105,13 +107,19 @@ def extract(path: Path) -> Dict[str, Any]:
     needles: Dict[str, str] = {}
 
     # 1. clock hook -----------------------------------------------------------
-    clock = _find(r"window\.__step\s*=\s*function|\bdraw\s*=\s*function\s*\(\s*p\s*\)", text)
+    clock = _find(
+        r"window\.__step\s*=\s*function|\bdraw\s*=\s*function\s*\(\s*p\s*\)", text
+    )
     if not clock:
-        missing.append("clock: no `window.__step` and no `draw(p)` -- without a deterministic "
-                       "clock the 3D scene cannot be verified against the 2D one")
+        missing.append(
+            "clock: no `window.__step` and no `draw(p)` -- without a deterministic "
+            "clock the 3D scene cannot be verified against the 2D one"
+        )
     else:
-        found["clock"] = {"hook": "window.__step" if "window.__step" in text else "draw(p)",
-                          "line": _line_of(text, clock)}
+        found["clock"] = {
+            "hook": "window.__step" if "window.__step" in text else "draw(p)",
+            "line": _line_of(text, clock),
+        }
         needles["clock.hook"] = found["clock"]["hook"]
 
     # 2. phases ---------------------------------------------------------------
@@ -132,7 +140,9 @@ def extract(path: Path) -> Dict[str, Any]:
             phase_derived.append(name)
             needles["phases." + name] = name
     if "GROW" not in phases:
-        missing.append("phases: no `GROW=<ms>` constant -- the growth phase is the animation")
+        missing.append(
+            "phases: no `GROW=<ms>` constant -- the growth phase is the animation"
+        )
     for name in ("LABEL", "HOLD"):
         if name not in phases:
             missing.append("phases: no `%s=<ms>` constant" % name)
@@ -146,40 +156,59 @@ def extract(path: Path) -> Dict[str, Any]:
             needles["phases.TOTAL"] = "GROW"
 
     # 3. seed -----------------------------------------------------------------
-    seedm = _find(r"mulberry32\s*\(\s*(\d+)\s*\)", text) or _find(r"seed\s*=\s*(\d+)", text)
+    seedm = _find(r"mulberry32\s*\(\s*(\d+)\s*\)", text) or _find(
+        r"seed\s*=\s*(\d+)", text
+    )
     if not seedm:
-        missing.append("seed: no `mulberry32(<int>)` and no `seed = <int>` -- without it the "
-                       "3D branch bearings would be random per run and unverifiable")
+        missing.append(
+            "seed: no `mulberry32(<int>)` and no `seed = <int>` -- without it the "
+            "3D branch bearings would be random per run and unverifiable"
+        )
     else:
-        found["seed"] = {"fn": "mulberry32" if "mulberry32" in text else "literal",
-                         "value": int(seedm.group(1)), "line": _line_of(text, seedm)}
+        found["seed"] = {
+            "fn": "mulberry32" if "mulberry32" in text else "literal",
+            "value": int(seedm.group(1)),
+            "line": _line_of(text, seedm),
+        }
         needles["seed.value"] = seedm.group(1)
 
     # 4. limb table -----------------------------------------------------------
     limbs: List[Dict[str, Any]] = []
-    limb_line = 0
     lm = _find(r"LIMBS\s*=\s*\[(.*?)\];", text, re.S)
     if lm:
-        limb_line = _line_of(text, lm)
         for row in re.finditer(
-                r'\[\s*"([^"]+)"\s*,\s*(-?1)\s*,\s*([0-9.]+)\s*,\s*"(#[0-9a-fA-F]{3,8})"\s*,'
-                r'\s*"([^"]*)"\s*\]', lm.group(1)):
+            r'\[\s*"([^"]+)"\s*,\s*(-?1)\s*,\s*([0-9.]+)\s*,\s*"(#[0-9a-fA-F]{3,8})"\s*,'
+            r'\s*"([^"]*)"\s*\]',
+            lm.group(1),
+        ):
             # The row's own line, not the table's: ten entities share one `LIMBS = [`
             # line, so a table-level line number proves nothing about any single row.
             # `lm.start(1)` is the offset of the captured body, so the sum is absolute.
             row_line = _line_of(text, _at(text, lm.start(1) + row.start()))
-            limbs.append({"name": row.group(1), "side": int(row.group(2)),
-                          "spread": float(row.group(3)), "hue": row.group(4),
-                          "src": row.group(5), "line": row_line})
+            limbs.append(
+                {
+                    "name": row.group(1),
+                    "side": int(row.group(2)),
+                    "spread": float(row.group(3)),
+                    "hue": row.group(4),
+                    "src": row.group(5),
+                    "line": row_line,
+                }
+            )
             needles["limbs.%s" % row.group(1)] = row.group(5)
     if not limbs:
-        missing.append("entities: no `LIMBS = [[\"name\", side, spread, \"#hex\", \"path\"], …]` "
-                       "table -- there is nothing to place in space")
+        missing.append(
+            'entities: no `LIMBS = [["name", side, spread, "#hex", "path"], …]` '
+            "table -- there is nothing to place in space"
+        )
 
     # 5. branch law -----------------------------------------------------------
     fractal: Dict[str, Any] = {}
-    bm = _find(r"branch\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*-?Math\.PI\s*/\s*2\s*,\s*(\d+)\s*,\s*(\d+)"
-               r"\s*,\s*(\d+)", text)
+    bm = _find(
+        r"branch\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*-?Math\.PI\s*/\s*2\s*,\s*(\d+)\s*,\s*(\d+)"
+        r"\s*,\s*(\d+)",
+        text,
+    )
     if bm:
         fractal["root_len"] = int(bm.group(1))
         fractal["root_width"] = int(bm.group(2))
@@ -188,7 +217,9 @@ def extract(path: Path) -> Dict[str, Any]:
         for key, grp in (("root_len", 1), ("root_width", 2), ("root_depth", 3)):
             needles["fractal." + key] = bm.group(grp)
     else:
-        missing.append("fractal: no root `branch(x, y, -Math.PI/2, len, width, depth)` call")
+        missing.append(
+            "fractal: no root `branch(x, y, -Math.PI/2, len, width, depth)` call"
+        )
 
     shrink = _find(r"len\s*\*\s*\(\s*\.(\d+)\s*\+\s*R\(\)\s*\*\s*\.(\d+)\s*\)", text)
     if shrink:
@@ -199,7 +230,9 @@ def extract(path: Path) -> Dict[str, Any]:
         needles["fractal.len_shrink_base"] = "." + shrink.group(1)
         needles["fractal.len_shrink_jitter"] = "." + shrink.group(2)
     else:
-        missing.append("fractal: no `len * (.<base> + R() * .<jitter>)` length-shrink expression")
+        missing.append(
+            "fractal: no `len * (.<base> + R() * .<jitter>)` length-shrink expression"
+        )
 
     wshrink = _find(r"w\s*\*\s*\.(\d+)", text)
     if wshrink:
@@ -238,7 +271,7 @@ def extract(path: Path) -> Dict[str, Any]:
         elif section == "phases":
             line = phase_lines.get(rest, 0)
         elif section == "limbs":
-            line = next((l["line"] for l in limbs if l["name"] == rest), 0)
+            line = next((limb["line"] for limb in limbs if limb["name"] == rest), 0)
         else:
             line = fractal.get(line_key.get(rest, ""), 0)
         evidence[name] = {"line": int(line), "needle": needle}
@@ -246,9 +279,11 @@ def extract(path: Path) -> Dict[str, Any]:
     return {
         "shape": RULES_SHAPE,
         "evidence": evidence,
-        "source": {"path": str(path).replace("\\", "/"),
-                   "bytes": len(text.encode("utf-8")),
-                   "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest()},
+        "source": {
+            "path": str(path).replace("\\", "/"),
+            "bytes": len(text.encode("utf-8")),
+            "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        },
         "clock": found["clock"],
         "seed": found["seed"],
         "phases": phases,
@@ -256,10 +291,12 @@ def extract(path: Path) -> Dict[str, Any]:
         "phase_derived": phase_derived,
         "limbs": limbs,
         "fractal": fractal,
-        "fidelity": ("RULES-EXTRACTED: phases, seed, entity table and branch law are read from "
-                     "the source and carry their line numbers. No pixel, colour ramp, sprite or "
-                     "label is carried -- the 3D figure is rebuilt from the rule, not rendered "
-                     "from the source."),
+        "fidelity": (
+            "RULES-EXTRACTED: phases, seed, entity table and branch law are read from "
+            "the source and carry their line numbers. No pixel, colour ramp, sprite or "
+            "label is carried -- the 3D figure is rebuilt from the rule, not rendered "
+            "from the source."
+        ),
     }
 
 
@@ -284,9 +321,12 @@ FRACTAL_LINE_KEYS = (
 def expected_evidence(rules: Dict[str, Any]) -> List[str]:
     """The rule names that MUST be in the evidence table, derived from the rules."""
     names = ["clock.hook", "seed.value"]
-    names += ["phases." + p for p in ("GROW", "LABEL", "HOLD", "TOTAL")
-              if p in rules.get("phases", {})]
-    names += ["limbs.%s" % l.get("name") for l in rules.get("limbs", [])]
+    names += [
+        "phases." + p
+        for p in ("GROW", "LABEL", "HOLD", "TOTAL")
+        if p in rules.get("phases", {})
+    ]
+    names += ["limbs.%s" % limb.get("name") for limb in rules.get("limbs", [])]
     fr = rules.get("fractal", {})
     names += ["fractal." + k for k, _ in FRACTAL_LINE_KEYS if k in fr]
     return names
@@ -309,11 +349,17 @@ def rule_evidence(rules: Dict[str, Any]) -> List[Tuple[str, int, str]]:
         if not isinstance(row.get("line"), int) or row["line"] <= 0:
             missing.append(name)
     if missing:
-        raise ExtractError(["evidence: %s carries no line number -- a rule this tool "
-                            "cannot point at is not extracted from anything" % name
-                            for name in sorted(set(missing))])
-    return [(name, int(table[name]["line"]), str(table[name].get("needle", "")))
-            for name in sorted(table)]
+        raise ExtractError(
+            [
+                "evidence: %s carries no line number -- a rule this tool "
+                "cannot point at is not extracted from anything" % name
+                for name in sorted(set(missing))
+            ]
+        )
+    return [
+        (name, int(table[name]["line"]), str(table[name].get("needle", "")))
+        for name in sorted(table)
+    ]
 
 
 def prove(path: Path) -> Tuple[int, List[str]]:
@@ -332,18 +378,24 @@ def prove(path: Path) -> Tuple[int, List[str]]:
     for name, line, needle in evidence:
         if line > len(src_lines):
             failures += 1
-            out.append("[FAIL] %-24s line %d is past the end of the source (%d lines)"
-                       % (name, line, len(src_lines)))
+            out.append(
+                "[FAIL] %-24s line %d is past the end of the source (%d lines)"
+                % (name, line, len(src_lines))
+            )
             continue
         cited = src_lines[line - 1]
         if needle and needle not in cited:
             failures += 1
-            out.append("[FAIL] %-24s line %d does not contain %r: %s"
-                       % (name, line, needle, cited.strip()[:70]))
+            out.append(
+                "[FAIL] %-24s line %d does not contain %r: %s"
+                % (name, line, needle, cited.strip()[:70])
+            )
         else:
             out.append("[PASS] %-24s line %-4d %s" % (name, line, cited.strip()[:78]))
-    out.append("%d rule(s), %d proved, %d unproved" % (len(evidence),
-                                                       len(evidence) - failures, failures))
+    out.append(
+        "%d rule(s), %d proved, %d unproved"
+        % (len(evidence), len(evidence) - failures, failures)
+    )
     return (0 if failures == 0 else 1), out
 
 
@@ -357,6 +409,7 @@ def shift_probe(path: Path, n: int = 7) -> Tuple[int, List[str]]:
     identical and every line must differ by exactly n.
     """
     import tempfile
+
     text = path.read_text(encoding="utf-8", errors="replace")
     src = text.splitlines(keepends=True)
     shifted_text = "".join(src[:1] + ["\n"] * n + src[1:])
@@ -372,17 +425,27 @@ def shift_probe(path: Path, n: int = 7) -> Tuple[int, List[str]]:
         moved = after.get(name, 0) - before[name]
         if moved != n:
             failures += 1
-            out.append("[FAIL] %-24s moved %+d, expected %+d (before %d, after %s)"
-                       % (name, moved, n, before[name], after.get(name)))
-    out.append("[%s] perturbation (+%d blank lines): %d/%d lines moved by exactly %+d"
-               % ("PASS" if failures == 0 else "FAIL", n, len(before) - failures,
-                  len(before), n))
+            out.append(
+                "[FAIL] %-24s moved %+d, expected %+d (before %d, after %s)"
+                % (name, moved, n, before[name], after.get(name))
+            )
+    out.append(
+        "[%s] perturbation (+%d blank lines): %d/%d lines moved by exactly %+d"
+        % (
+            "PASS" if failures == 0 else "FAIL",
+            n,
+            len(before) - failures,
+            len(before),
+            n,
+        )
+    )
     return (0 if failures == 0 else 1), out
 
 
 # --------------------------------------------------------------------------- #
 # geometry: the same tree, in three dimensions, in both languages
 # --------------------------------------------------------------------------- #
+
 
 def mulberry32(seed: int):
     """The canonical mulberry32, ported to Python arithmetic.
@@ -400,17 +463,22 @@ def mulberry32(seed: int):
         t = ((state ^ (state >> 15)) * (1 | state)) & 0xFFFFFFFF
         t = ((t + ((((t ^ (t >> 7)) * (61 | t)) & 0xFFFFFFFF))) ^ t) & 0xFFFFFFFF
         return ((t ^ (t >> 14)) & 0xFFFFFFFF) / 4294967296.0
+
     return rnd
 
 
-def build_geometry(rules: Dict[str, Any], max_depth: Optional[int] = None) -> Dict[str, Any]:
+def build_geometry(
+    rules: Dict[str, Any], max_depth: Optional[int] = None
+) -> Dict[str, Any]:
     """Build the 3D tree. Branch bearings are the 2D angles lifted onto a cone whose
     azimuth comes from the source's own seed, so the 3D scene is traceable to the seed and
     not to a fresh random draw."""
     fr = rules["fractal"]
     rnd = mulberry32(int(rules["seed"]["value"]))
     limbs = rules["limbs"]
-    segments: List[Tuple[float, float, float, float, float, float, float, int, str]] = []
+    segments: List[Tuple[float, float, float, float, float, float, float, int, str]] = (
+        []
+    )
     leaves: List[Tuple[float, float, float, str]] = []
     tips: List[Tuple[float, float, float]] = []
 
@@ -418,17 +486,31 @@ def build_geometry(rules: Dict[str, Any], max_depth: Optional[int] = None) -> Di
     if max_depth is not None:
         depth_cap = min(depth_cap, int(max_depth))
 
-    def branch(x: float, y: float, z: float, yaw: float, pitch: float,
-               length: float, width: float, depth: int, hue: str) -> None:
+    def branch(
+        x: float,
+        y: float,
+        z: float,
+        yaw: float,
+        pitch: float,
+        length: float,
+        width: float,
+        depth: int,
+        hue: str,
+    ) -> None:
         x1 = x + math.cos(pitch) * math.cos(yaw) * length
         y1 = y - math.sin(pitch) * length
         z1 = z + math.cos(pitch) * math.sin(yaw) * length
         segments.append((x, y, z, x1, y1, z1, width, depth, hue))
         if depth <= 0 or length < 9:
             for _ in range(int(fr.get("leaf_per_tip", 3))):
-                leaves.append((x1 + (rnd() - 0.5) * 26.0,
-                               y1 + (rnd() - 0.5) * 26.0,
-                               z1 + (rnd() - 0.5) * 26.0, hue))
+                leaves.append(
+                    (
+                        x1 + (rnd() - 0.5) * 26.0,
+                        y1 + (rnd() - 0.5) * 26.0,
+                        z1 + (rnd() - 0.5) * 26.0,
+                        hue,
+                    )
+                )
             tips.append((x1, y1, z1))
             return
         n = 2 if depth > 6 else (3 if rnd() < 0.18 else 2)
@@ -439,15 +521,35 @@ def build_geometry(rules: Dict[str, Any], max_depth: Optional[int] = None) -> Di
             # a limb keeps growing upward the way the 2D source's does.
             dyaw = (rnd() - 0.5) * 0.55 + (i - (n - 1) / 2.0) * 0.30
             dpitch = (rnd() - 0.5) * 0.35
-            nl = length * (fr.get("len_shrink_base", 0.68)
-                           + rnd() * fr.get("len_shrink_jitter", 0.12))
-            branch(x1, y1, z1, yaw + dyaw, max(0.35, pitch + dpitch),
-                   nl, width * fr.get("width_shrink", 0.66), depth - 1, hue)
+            nl = length * (
+                fr.get("len_shrink_base", 0.68)
+                + rnd() * fr.get("len_shrink_jitter", 0.12)
+            )
+            branch(
+                x1,
+                y1,
+                z1,
+                yaw + dyaw,
+                max(0.35, pitch + dpitch),
+                nl,
+                width * fr.get("width_shrink", 0.66),
+                depth - 1,
+                hue,
+            )
 
     # trunk: a tapered pole rising from y=+520 (baseline) to y=+520 - root_len
     base_y = 520.0
-    branch(0.0, base_y, 0.0, -math.pi / 2, math.pi / 2, float(fr["root_len"]),
-           float(fr["root_width"]), depth_cap, "#8a6b3d")
+    branch(
+        0.0,
+        base_y,
+        0.0,
+        -math.pi / 2,
+        math.pi / 2,
+        float(fr["root_len"]),
+        float(fr["root_width"]),
+        depth_cap,
+        "#8a6b3d",
+    )
     # Limbs are placed on a RING around the trunk, not side by side in x: the 2D source fans
     # them across one axis because it has only one axis. In three dimensions the same fan is
     # a candelabra, and `spread` becomes the outward tilt -- the closest 3D reading of the
@@ -456,13 +558,23 @@ def build_geometry(rules: Dict[str, Any], max_depth: Optional[int] = None) -> Di
     for index, limb in enumerate(limbs):
         angle = -math.pi / 2 + (index / count) * math.tau
         radius = 40.0 + limb["spread"] * 320.0
-        branch(math.cos(angle) * radius, base_y - float(fr["root_len"]) * 0.62
-               - (index % 3) * 22.0, math.sin(angle) * radius,
-               angle, math.pi / 2 - (0.42 + limb["spread"]),
-               float(fr["root_len"]) * 0.92, float(fr["root_width"]) * 0.55,
-               depth_cap, limb["hue"])
-    geo = {"segments": segments, "leaves": leaves, "tips": tips,
-           "base": (0.0, base_y, 0.0)}
+        branch(
+            math.cos(angle) * radius,
+            base_y - float(fr["root_len"]) * 0.62 - (index % 3) * 22.0,
+            math.sin(angle) * radius,
+            angle,
+            math.pi / 2 - (0.42 + limb["spread"]),
+            float(fr["root_len"]) * 0.92,
+            float(fr["root_width"]) * 0.55,
+            depth_cap,
+            limb["hue"],
+        )
+    geo = {
+        "segments": segments,
+        "leaves": leaves,
+        "tips": tips,
+        "base": (0.0, base_y, 0.0),
+    }
     geo["fit"] = fit_of(geo)
     return geo
 
@@ -477,16 +589,22 @@ def fit_of(geo: Dict[str, Any]) -> Dict[str, float]:
     xs: List[float] = []
     ys: List[float] = []
     zs: List[float] = []
-    for (x0, y0, z0, x1, y1, z1, _w, _d, _h) in geo["segments"]:
-        xs.extend((x0, x1)); ys.extend((y0, y1)); zs.extend((z0, z1))
+    for x0, y0, z0, x1, y1, z1, _w, _d, _h in geo["segments"]:
+        xs.extend((x0, x1))
+        ys.extend((y0, y1))
+        zs.extend((z0, z1))
     if not xs:
         return {"cx": 0.0, "cy": 0.0, "cz": 0.0, "scale": 1.0}
     cx = (min(xs) + max(xs)) / 2.0
     cy = (min(ys) + max(ys)) / 2.0
     cz = (min(zs) + max(zs)) / 2.0
     span = max(max(ys) - min(ys), max(xs) - min(xs), 1.0)
-    return {"cx": round(cx, 4), "cy": round(cy, 4), "cz": round(cz, 4),
-            "scale": round(0.80 * 1080.0 / span, 4)}
+    return {
+        "cx": round(cx, 4),
+        "cy": round(cy, 4),
+        "cz": round(cz, 4),
+        "scale": round(0.80 * 1080.0 / span, 4),
+    }
 
 
 def _q(value: float, scale: int = 10000) -> int:
@@ -503,8 +621,10 @@ def _q(value: float, scale: int = 10000) -> int:
 
 def geometory_stream(geo: Dict[str, Any]) -> str:
     parts = []
-    for (x0, y0, z0, x1, y1, z1, w, d, _hue) in geo["segments"]:
-        parts.append(",".join(str(_q(v)) for v in (x0, y0, z0, x1, y1, z1, w)) + "," + str(d))
+    for x0, y0, z0, x1, y1, z1, w, d, _hue in geo["segments"]:
+        parts.append(
+            ",".join(str(_q(v)) for v in (x0, y0, z0, x1, y1, z1, w)) + "," + str(d)
+        )
     return ";".join(parts)
 
 
@@ -524,7 +644,9 @@ def project_stream(geo: Dict[str, Any], tick: float) -> str:
     return ";".join(project(geo, tick, {}))
 
 
-def project(geo: Dict[str, Any], tick: float, rules: Optional[Dict[str, Any]] = None) -> List[str]:
+def project(
+    geo: Dict[str, Any], tick: float, rules: Optional[Dict[str, Any]] = None
+) -> List[str]:
     """The camera at `tick`, projected. Mirrors projectAll() in flame3d.html exactly."""
     yaw = (tick / ORBIT_TICKS) * math.tau
     cy, sy = math.cos(yaw), math.sin(yaw)
@@ -533,9 +655,13 @@ def project(geo: Dict[str, Any], tick: float, rules: Optional[Dict[str, Any]] = 
     step = max(1, len(geo["segments"]) // 12)
     for index in range(0, len(geo["segments"]), step):
         x0, y0, z0, x1, y1, z1, _w, _d, _h = geo["segments"][index]
-        for (px, py, pz) in ((x0, y0, z0), (x1, y1, z1)):
-            rx = (px - fit["cx"]) * fit["scale"] * cy - (pz - fit["cz"]) * fit["scale"] * sy
-            rz = (px - fit["cx"]) * fit["scale"] * sy + (pz - fit["cz"]) * fit["scale"] * cy
+        for px, py, pz in ((x0, y0, z0), (x1, y1, z1)):
+            rx = (px - fit["cx"]) * fit["scale"] * cy - (pz - fit["cz"]) * fit[
+                "scale"
+            ] * sy
+            rz = (px - fit["cx"]) * fit["scale"] * sy + (pz - fit["cz"]) * fit[
+                "scale"
+            ] * cy
             ry = (py - fit["cy"]) * fit["scale"]
             scale = FOCAL / (FOCAL + rz)
             out.append("%d,%d" % (_q(960 + rx * scale, 100), _q(540 + ry * scale, 100)))
@@ -543,18 +669,26 @@ def project(geo: Dict[str, Any], tick: float, rules: Optional[Dict[str, Any]] = 
 
 
 def golden(rules: Dict[str, Any], geo: Dict[str, Any]) -> Dict[str, Any]:
-    total = float(rules["phases"].get("TOTAL") or
-                  sum(rules["phases"].get(k, 0) for k in ("GROW", "LABEL", "HOLD")))
+    total = float(
+        rules["phases"].get("TOTAL")
+        or sum(rules["phases"].get(k, 0) for k in ("GROW", "LABEL", "HOLD"))
+    )
     states = {}
     for frac in GOLDEN_FRACTIONS:
         tick = round(total * frac)
         states["t%d" % tick] = _fnv(project_stream(geo, tick))
-    return {"shape": SCENE_SHAPE,
-            "rules_sha256": _fnv(json.dumps(rules["fractal"], sort_keys=True)),
-            "geometry_sha256": geometry_digest(geo),
-            "segments": len(geo["segments"]), "leaves": len(geo["leaves"]),
-            "focal": FOCAL, "orbit_ticks": ORBIT_TICKS, "fit": geo["fit"],
-            "states": states, "phases": rules["phases"]}
+    return {
+        "shape": SCENE_SHAPE,
+        "rules_sha256": _fnv(json.dumps(rules["fractal"], sort_keys=True)),
+        "geometry_sha256": geometry_digest(geo),
+        "segments": len(geo["segments"]),
+        "leaves": len(geo["leaves"]),
+        "focal": FOCAL,
+        "orbit_ticks": ORBIT_TICKS,
+        "fit": geo["fit"],
+        "states": states,
+        "phases": rules["phases"],
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -712,17 +846,25 @@ loop();
 """
 
 
-def forge(rules_path: Path, out_dir: Path, title: str = "") -> Tuple[int, Dict[str, Any]]:
+def forge(
+    rules_path: Path, out_dir: Path, title: str = ""
+) -> Tuple[int, Dict[str, Any]]:
     rules = json.loads(rules_path.read_text(encoding="utf-8"))
     if rules.get("shape") != RULES_SHAPE:
-        return REFUSED, {"state": "WRONG-SHAPE",
-                         "reason": "%s is %r, expected %r" % (rules_path, rules.get("shape"),
-                                                              RULES_SHAPE)}
-    missing = [k for k in ("clock", "seed", "phases", "limbs", "fractal") if not rules.get(k)]
+        return REFUSED, {
+            "state": "WRONG-SHAPE",
+            "reason": "%s is %r, expected %r"
+            % (rules_path, rules.get("shape"), RULES_SHAPE),
+        }
+    missing = [
+        k for k in ("clock", "seed", "phases", "limbs", "fractal") if not rules.get(k)
+    ]
     if missing:
-        return REFUSED, {"state": "INCOMPLETE-RULES",
-                         "reason": "rules are missing %s -- a scene built from them would be "
-                                   "a guess wearing a translation's clothes" % ", ".join(missing)}
+        return REFUSED, {
+            "state": "INCOMPLETE-RULES",
+            "reason": "rules are missing %s -- a scene built from them would be "
+            "a guess wearing a translation's clothes" % ", ".join(missing),
+        }
     geo = build_geometry(rules)
     gold = golden(rules, geo)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -736,17 +878,29 @@ def forge(rules_path: Path, out_dir: Path, title: str = "") -> Tuple[int, Dict[s
     scene = out_dir / "flame3d.html"
     # provenance rides inside the document, not as a pre-doctype text preamble: a file whose
     # first line is not `<!DOCTYPE` or a comment is served in quirks mode by some clients.
-    scene.write_text(html.replace(
-        "<!DOCTYPE html>",
-        "<!DOCTYPE html>\n<!-- shape: %s | source_sha256: %s | forged by "
-        "Project_SHARDEX/transubstantiate.py -->" % (SCENE_SHAPE,
-                                                      rules["source"]["sha256"]), 1),
-        encoding="utf-8")
-    (out_dir / "rules.json").write_text(json.dumps(rules, indent=1, sort_keys=True), encoding="utf-8")
-    (out_dir / "golden3d.json").write_text(json.dumps(gold, indent=1, sort_keys=True),
-                                           encoding="utf-8")
-    return OK, {"state": "FORGED", "scene": str(scene), "segments": len(geo["segments"]),
-                "leaves": len(geo["leaves"]), "golden": gold}
+    scene.write_text(
+        html.replace(
+            "<!DOCTYPE html>",
+            "<!DOCTYPE html>\n<!-- shape: %s | source_sha256: %s | forged by "
+            "Project_SHARDEX/transubstantiate.py -->"
+            % (SCENE_SHAPE, rules["source"]["sha256"]),
+            1,
+        ),
+        encoding="utf-8",
+    )
+    (out_dir / "rules.json").write_text(
+        json.dumps(rules, indent=1, sort_keys=True), encoding="utf-8"
+    )
+    (out_dir / "golden3d.json").write_text(
+        json.dumps(gold, indent=1, sort_keys=True), encoding="utf-8"
+    )
+    return OK, {
+        "state": "FORGED",
+        "scene": str(scene),
+        "segments": len(geo["segments"]),
+        "leaves": len(geo["leaves"]),
+        "golden": gold,
+    }
 
 
 def verify(out_dir: Path) -> Tuple[int, Dict[str, Any]]:
@@ -757,40 +911,57 @@ def verify(out_dir: Path) -> Tuple[int, Dict[str, Any]]:
     rules_path = out_dir / "rules.json"
     for need in (scene, gold_path, rules_path):
         if not need.exists():
-            return COULD_NOT_RUN, {"state": "MISSING", "reason": "no %s in %s"
-                                   % (need.name, out_dir)}
+            return COULD_NOT_RUN, {
+                "state": "MISSING",
+                "reason": "no %s in %s" % (need.name, out_dir),
+            }
     rules = json.loads(rules_path.read_text(encoding="utf-8"))
     stored = json.loads(gold_path.read_text(encoding="utf-8"))
     geo = build_geometry(rules)
     fresh = golden(rules, geo)
 
     if fresh["geometry_sha256"] != stored["geometry_sha256"]:
-        return REFUSED, {"state": "TAMPERED", "reason":
-                         "geometry digest moved: stored %s, recomputed %s"
-                         % (stored["geometry_sha256"], fresh["geometry_sha256"])}
+        return REFUSED, {
+            "state": "TAMPERED",
+            "reason": "geometry digest moved: stored %s, recomputed %s"
+            % (stored["geometry_sha256"], fresh["geometry_sha256"]),
+        }
     if fresh["states"] != stored["states"]:
-        return REFUSED, {"state": "TAMPERED",
-                         "reason": "projected states moved: %s != %s"
-                                   % (stored["states"], fresh["states"])}
+        return REFUSED, {
+            "state": "TAMPERED",
+            "reason": "projected states moved: %s != %s"
+            % (stored["states"], fresh["states"]),
+        }
     browser = out_dir / "browser_probe.json"
     cross = {"state": "NOT-RUN", "reason": "no browser_probe.json"}
     if browser.exists():
         probe = json.loads(browser.read_text(encoding="utf-8"))
         if probe.get("geometry_sha256") != fresh["geometry_sha256"]:
-            return REFUSED, {"state": "LANGUAGE-DIVERGENCE", "reason":
-                             "the browser built %s, python built %s -- the two "
-                             "implementations are not the same tree"
-                             % (probe.get("geometry_sha256"), fresh["geometry_sha256"])}
+            return REFUSED, {
+                "state": "LANGUAGE-DIVERGENCE",
+                "reason": "the browser built %s, python built %s -- the two "
+                "implementations are not the same tree"
+                % (probe.get("geometry_sha256"), fresh["geometry_sha256"]),
+            }
         for key, value in fresh["states"].items():
             if probe.get("states", {}).get(key) != value:
-                return REFUSED, {"state": "LANGUAGE-DIVERGENCE", "reason":
-                                 "%s: browser %s != python %s"
-                                 % (key, probe.get("states", {}).get(key), value)}
-        cross = {"state": "MATCH", "segments": probe.get("segments"),
-                 "leaves": probe.get("leaves")}
-    return OK, {"state": "VERIFIED", "geometry_sha256": fresh["geometry_sha256"],
-                "states": fresh["states"], "browser": cross,
-                "fidelity": rules.get("fidelity", "")}
+                return REFUSED, {
+                    "state": "LANGUAGE-DIVERGENCE",
+                    "reason": "%s: browser %s != python %s"
+                    % (key, probe.get("states", {}).get(key), value),
+                }
+        cross = {
+            "state": "MATCH",
+            "segments": probe.get("segments"),
+            "leaves": probe.get("leaves"),
+        }
+    return OK, {
+        "state": "VERIFIED",
+        "geometry_sha256": fresh["geometry_sha256"],
+        "states": fresh["states"],
+        "browser": cross,
+        "fidelity": rules.get("fidelity", ""),
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -816,10 +987,13 @@ PREDICT_SHAPE = "shardex-predict-v1"
 
 _CONSTS_RE = re.compile(r"\b([A-Z][A-Z0-9_]*)\s*=\s*(\d[\d\s+]*?)\s*(?=[,;])")
 _TABLE_RE = re.compile(r"\bLIMBS\s*=\s*\[(.*?)\];", re.S)
-_ROW_RE = re.compile(r'\[\s*"[^"]+"\s*,\s*-?1\s*,\s*[\d.]+\s*,\s*"#[0-9a-fA-F]{3,8}"\s*,')
+_ROW_RE = re.compile(
+    r'\[\s*"[^"]+"\s*,\s*-?1\s*,\s*[\d.]+\s*,\s*"#[0-9a-fA-F]{3,8}"\s*,'
+)
 _HOOK_RE = re.compile(r"window\.__step\s*=\s*function\s*\(\s*(\w+)\s*\)")
 _BOUND_RE = re.compile(
-    r"\bp\s*<\s*(\d+(?:\s*\+\s*\d+)*|[A-Z][A-Z0-9_]*(?:\s*\+\s*(?:[A-Z][A-Z0-9_]*|\d+))*)")
+    r"\bp\s*<\s*(\d+(?:\s*\+\s*\d+)*|[A-Z][A-Z0-9_]*(?:\s*\+\s*(?:[A-Z][A-Z0-9_]*|\d+))*)"
+)
 
 
 def _consts(text: str) -> Dict[str, int]:
@@ -880,12 +1054,13 @@ def _boundaries(text: str, consts: Dict[str, int]) -> List[Tuple[int, str, int]]
         if value is None or (value, expr) in seen:
             continue
         seen.add((value, expr))
-        out.append((value, expr, text[:m.start()].count("\n") + 1))
+        out.append((value, expr, text[: m.start()].count("\n") + 1))
     return sorted(out)
 
 
-def predict(rules_path: Path, source_override: Optional[Path] = None
-            ) -> Tuple[int, Dict[str, Any]]:
+def predict(
+    rules_path: Path, source_override: Optional[Path] = None
+) -> Tuple[int, Dict[str, Any]]:
     """Score each extracted rule against the source's use sites. Exit below 3/5."""
     rules = json.loads(Path(rules_path).read_text(encoding="utf-8"))
     declared = Path(rules["source"]["path"])
@@ -893,9 +1068,11 @@ def predict(rules_path: Path, source_override: Optional[Path] = None
     if not path.is_absolute() and not path.exists():
         path = HERE.parent / declared
     if not path.exists():
-        return COULD_NOT_RUN, {"state": "NO-SOURCE",
-                               "reason": "%s is not on disk -- predictions are measured at "
-                                         "use sites in the source, so the source is required" % path}
+        return COULD_NOT_RUN, {
+            "state": "NO-SOURCE",
+            "reason": "%s is not on disk -- predictions are measured at "
+            "use sites in the source, so the source is required" % path,
+        }
     text = path.read_text(encoding="utf-8", errors="replace")
     consts = _consts(text)
     findings: List[Dict[str, Any]] = []
@@ -903,41 +1080,65 @@ def predict(rules_path: Path, source_override: Optional[Path] = None
     # 1. clock -- does the hook's argument reach the frame, or is the hook a stub? ----
     hook = _HOOK_RE.search(text)
     if not hook:
-        findings.append({"rule": "clock", "state": "FALSIFIED",
-                         "perturb": "freeze the clock at t=0",
-                         "predicted": "every frame shows phase GROW",
-                         "observed": "no `window.__step(arg)` in the source -- the extracted "
-                                     "hook is not the one the page uses"})
+        findings.append(
+            {
+                "rule": "clock",
+                "state": "FALSIFIED",
+                "perturb": "freeze the clock at t=0",
+                "predicted": "every frame shows phase GROW",
+                "observed": "no `window.__step(arg)` in the source -- the extracted "
+                "hook is not the one the page uses",
+            }
+        )
     else:
         arg = hook.group(1)
-        body = text[hook.end():hook.end() + 400]
+        body = text[hook.end() : hook.end() + 400]
         drives = re.search(r"\b\w+\s*=\s*%s\b" % re.escape(arg), body) is not None
         draws = re.search(r"\bdraw\s*\(\s*%s\b" % re.escape(arg), body) is not None
         bounds = _boundaries(text, consts)
         states = sum(1 for b, _, _ in bounds if b > 0) + 1
-        findings.append({
-            "rule": "clock", "perturb": "pin the hook argument to 0 (freeze the frame)",
-            "predicted": "the phase never leaves GROW: 1 of the %d phase state(s) reachable" % states,
-            "observed": "%s is assigned into the clock: %s; passed to draw(): %s; %d phase "
-                        "boundar%s reachable" % (arg, "set" if drives else "NOT set",
-                                                 "drawn" if draws else "NOT drawn", states,
-                                                 "y" if states == 1 else "ies"),
-            "state": "VERIFIED" if drives and draws and states > 1 else "FALSIFIED"})
+        findings.append(
+            {
+                "rule": "clock",
+                "perturb": "pin the hook argument to 0 (freeze the frame)",
+                "predicted": "the phase never leaves GROW: 1 of the %d phase state(s) reachable"
+                % states,
+                "observed": "%s is assigned into the clock: %s; passed to draw(): %s; %d phase "
+                "boundar%s reachable"
+                % (
+                    arg,
+                    "set" if drives else "NOT set",
+                    "drawn" if draws else "NOT drawn",
+                    states,
+                    "y" if states == 1 else "ies",
+                ),
+                "state": "VERIFIED" if drives and draws and states > 1 else "FALSIFIED",
+            }
+        )
 
     # 2. phases -- perturb GROW, and measure the caption boundary move by that much ----
     src_grow = consts.get("GROW")
     bounds = _boundaries(text, consts)
     if src_grow is None or not bounds:
-        findings.append({"rule": "phases", "state": "FALSIFIED", "perturb": "GROW += 1000",
-                         "predicted": "every caption boundary written in terms of GROW moves +1000 ms",
-                         "observed": "the source declares no GROW and tests no `p <` threshold"})
+        findings.append(
+            {
+                "rule": "phases",
+                "state": "FALSIFIED",
+                "perturb": "GROW += 1000",
+                "predicted": "every caption boundary written in terms of GROW moves +1000 ms",
+                "observed": "the source declares no GROW and tests no `p <` threshold",
+            }
+        )
     else:
         delta = 1000
         # Who is governed by the constant, and who only looks like it? Non-GROW names in
         # an expression are held fixed, so the perturbation isolates GROW's influence.
         governed = [b for b in bounds if re.search(r"\bGROW\b", b[1])]
         literal = [b for b in bounds if not re.search(r"\bGROW\b", b[1])]
-        shifted = {(e, ln): v for v, e, ln in _boundaries(text, dict(consts, GROW=src_grow + delta))}
+        shifted = {
+            (e, ln): v
+            for v, e, ln in _boundaries(text, dict(consts, GROW=src_grow + delta))
+        }
         moved = [shifted[(e, ln)] - v for v, e, ln in governed]
         all_moved = bool(governed) and all(d == delta for d in moved)
         # A literal threshold inside the GROW window means the caption ladder stops
@@ -945,91 +1146,168 @@ def predict(rules_path: Path, source_override: Optional[Path] = None
         shadow = [b for b in literal if 0 < b[0] < src_grow]
         agrees = src_grow == int(rules["phases"].get("GROW", -1))
         detail = "source GROW=%d; governed %s move %s; extracted GROW=%s" % (
-            src_grow, [(v, e) for v, e, _ in governed], moved, rules["phases"].get("GROW"))
+            src_grow,
+            [(v, e) for v, e, _ in governed],
+            moved,
+            rules["phases"].get("GROW"),
+        )
         if shadow:
-            detail += ("; LITERAL %s shadow%s a phase constant -- `%s` at line %d is a hardcoded "
-                       "boundary inside the GROW window, so the caption ladder does not follow "
-                       "the animation" % ([b[0] for b in shadow], "s" if len(shadow) == 1 else "",
-                                          shadow[0][1], shadow[0][2]))
-        findings.append({
-            "rule": "phases", "perturb": "GROW += %d" % delta,
-            "predicted": "every boundary written in terms of GROW moves +%d ms; a literal "
-                         "boundary does not move, and while it sits inside the GROW window "
-                         "the phases do not govern the caption ladder" % delta,
-            "observed": detail,
-            "state": "VERIFIED" if agrees and all_moved and not shadow else "FALSIFIED"})
+            detail += (
+                "; LITERAL %s shadow%s a phase constant -- `%s` at line %d is a hardcoded "
+                "boundary inside the GROW window, so the caption ladder does not follow "
+                "the animation"
+                % (
+                    [b[0] for b in shadow],
+                    "s" if len(shadow) == 1 else "",
+                    shadow[0][1],
+                    shadow[0][2],
+                )
+            )
+        findings.append(
+            {
+                "rule": "phases",
+                "perturb": "GROW += %d" % delta,
+                "predicted": "every boundary written in terms of GROW moves +%d ms; a literal "
+                "boundary does not move, and while it sits inside the GROW window "
+                "the phases do not govern the caption ladder" % delta,
+                "observed": detail,
+                "state": (
+                    "VERIFIED" if agrees and all_moved and not shadow else "FALSIFIED"
+                ),
+            }
+        )
 
     # 3. seed -- the literal must be consumed inside the branch, not merely declared ----
     src_seed = None
-    seedm = re.search(r"mulberry32\s*\(\s*(\d+)\s*\)", text) or re.search(r"seed\s*=\s*(\d+)", text)
+    seedm = re.search(r"mulberry32\s*\(\s*(\d+)\s*\)", text) or re.search(
+        r"seed\s*=\s*(\d+)", text
+    )
     if seedm:
         src_seed = int(seedm.group(1))
     branch_at = text.find("function branch(")
-    branch_body = text[branch_at:branch_at + 800] if branch_at >= 0 else ""
+    branch_body = text[branch_at : branch_at + 800] if branch_at >= 0 else ""
     consumes = re.search(r"\bR\s*\(\s*\)", branch_body) is not None
     if src_seed is None:
-        findings.append({"rule": "seed", "state": "FALSIFIED", "perturb": "seed += 1",
-                         "predicted": "every branch bearing changes",
-                         "observed": "no seed literal reaches an RNG constructor"})
+        findings.append(
+            {
+                "rule": "seed",
+                "state": "FALSIFIED",
+                "perturb": "seed += 1",
+                "predicted": "every branch bearing changes",
+                "observed": "no seed literal reaches an RNG constructor",
+            }
+        )
     elif not consumes:
-        findings.append({"rule": "seed", "state": "PRESENT-BUT-UNFALSIFIED",
-                         "perturb": "seed += 1",
-                         "predicted": "every branch bearing changes",
-                         "observed": "mulberry32(%d) exists but R() is never called inside "
-                                     "branch(), so no bearing is shown to depend on it" % src_seed})
+        findings.append(
+            {
+                "rule": "seed",
+                "state": "PRESENT-BUT-UNFALSIFIED",
+                "perturb": "seed += 1",
+                "predicted": "every branch bearing changes",
+                "observed": "mulberry32(%d) exists but R() is never called inside "
+                "branch(), so no bearing is shown to depend on it" % src_seed,
+            }
+        )
     else:
         rnd_a = mulberry32(src_seed)
         rnd_b = mulberry32(src_seed + 1)
         first_a, first_b = rnd_a(), rnd_b()
         agrees = src_seed == int(rules["seed"]["value"])
-        findings.append({
-            "rule": "seed", "perturb": "seed += 1",
-            "predicted": "the first draw -- and so every branch bearing -- changes",
-            "observed": "mulberry32(%d) first draw %.9f vs %.9f at %d (%s); R() is consumed "
-                        "inside branch()" % (src_seed, first_a, first_b, src_seed + 1,
-                                             "differs" if first_a != first_b else "IDENTICAL"),
-            "state": "VERIFIED" if agrees and first_a != first_b else "FALSIFIED"})
+        findings.append(
+            {
+                "rule": "seed",
+                "perturb": "seed += 1",
+                "predicted": "the first draw -- and so every branch bearing -- changes",
+                "observed": "mulberry32(%d) first draw %.9f vs %.9f at %d (%s); R() is consumed "
+                "inside branch()"
+                % (
+                    src_seed,
+                    first_a,
+                    first_b,
+                    src_seed + 1,
+                    "differs" if first_a != first_b else "IDENTICAL",
+                ),
+                "state": "VERIFIED" if agrees and first_a != first_b else "FALSIFIED",
+            }
+        )
 
     # 4. entities -- drop a row; exactly one fewer limb must reach the render ---------
     table = _TABLE_RE.search(text)
     rows = len(_ROW_RE.findall(table.group(1))) if table else 0
-    loop = re.search(r"LIMBS\s*\.\s*forEach|i\s*<\s*LIMBS\s*\.\s*length", text) is not None
+    loop = (
+        re.search(r"LIMBS\s*\.\s*forEach|i\s*<\s*LIMBS\s*\.\s*length", text) is not None
+    )
     if not table or not rows:
-        findings.append({"rule": "entities", "state": "FALSIFIED", "perturb": "drop one row",
-                         "predicted": "the rendered limb count drops by 1",
-                         "observed": "no LIMBS table in the source"})
+        findings.append(
+            {
+                "rule": "entities",
+                "state": "FALSIFIED",
+                "perturb": "drop one row",
+                "predicted": "the rendered limb count drops by 1",
+                "observed": "no LIMBS table in the source",
+            }
+        )
     else:
-        findings.append({
-            "rule": "entities", "perturb": "drop one row from LIMBS",
-            "predicted": "%d limbs rendered instead of %d" % (rows - 1, rows),
-            "observed": "source table holds %d row(s); render loop %s; extracted table holds %d"
-                        % (rows, "iterates the table" if loop else "does NOT iterate the table",
-                           len(rules.get("limbs") or [])),
-            "state": "VERIFIED" if loop and rows == len(rules.get("limbs") or []) else "FALSIFIED"})
+        findings.append(
+            {
+                "rule": "entities",
+                "perturb": "drop one row from LIMBS",
+                "predicted": "%d limbs rendered instead of %d" % (rows - 1, rows),
+                "observed": "source table holds %d row(s); render loop %s; extracted table holds %d"
+                % (
+                    rows,
+                    "iterates the table" if loop else "does NOT iterate the table",
+                    len(rules.get("limbs") or []),
+                ),
+                "state": (
+                    "VERIFIED"
+                    if loop and rows == len(rules.get("limbs") or [])
+                    else "FALSIFIED"
+                ),
+            }
+        )
 
     # 5. branch law -- recursion and shrink are visible; the leaf COUNT is a runtime fact
     recursive = bool(branch_at >= 0 and re.search(r"\bbranch\s*\(", branch_body[20:]))
-    shrink = re.search(r"len\s*\*\s*\(\s*\.\d+\s*\+\s*R\(\)\s*\*\s*\.\d+\s*\)", branch_body)
+    shrink = re.search(
+        r"len\s*\*\s*\(\s*\.\d+\s*\+\s*R\(\)\s*\*\s*\.\d+\s*\)", branch_body
+    )
     if not (recursive and shrink):
-        findings.append({"rule": "branch", "state": "FALSIFIED", "perturb": "depth += 1",
-                         "predicted": "the drawn segment count grows with the extra level",
-                         "observed": "branch() is %s recursive and %s a length-shrink expression"
-                                     % ("" if recursive else "NOT", "carries" if shrink else "has no")})
+        findings.append(
+            {
+                "rule": "branch",
+                "state": "FALSIFIED",
+                "perturb": "depth += 1",
+                "predicted": "the drawn segment count grows with the extra level",
+                "observed": "branch() is %s recursive and %s a length-shrink expression"
+                % ("" if recursive else "NOT", "carries" if shrink else "has no"),
+            }
+        )
     else:
-        findings.append({
-            "rule": "branch", "state": "PRESENT-BUT-UNFALSIFIED", "perturb": "depth += 1",
-            "predicted": "the drawn segment count grows with the extra level",
-            "observed": "branch() recurses with `len*(.68+R()*.12)` -- the law is present, but "
-                        "the segment count is produced by canvas calls at runtime and no "
-                        "number in the source states it, so there is nothing to measure "
-                        "without executing the page"})
+        findings.append(
+            {
+                "rule": "branch",
+                "state": "PRESENT-BUT-UNFALSIFIED",
+                "perturb": "depth += 1",
+                "predicted": "the drawn segment count grows with the extra level",
+                "observed": "branch() recurses with `len*(.68+R()*.12)` -- the law is present, but "
+                "the segment count is produced by canvas calls at runtime and no "
+                "number in the source states it, so there is nothing to measure "
+                "without executing the page",
+            }
+        )
 
     verified = sum(1 for f in findings if f["state"] == "VERIFIED")
-    doc = {"shape": PREDICT_SHAPE, "source": str(path).replace("\\", "/"),
-           "source_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
-           "rules_sha256": hashlib.sha256(Path(rules_path).read_bytes()).hexdigest(),
-           "rules": findings, "verified": verified, "total": len(findings),
-           "state": "SCORED" if verified >= 3 else "REFUSED"}
+    doc = {
+        "shape": PREDICT_SHAPE,
+        "source": str(path).replace("\\", "/"),
+        "source_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        "rules_sha256": hashlib.sha256(Path(rules_path).read_bytes()).hexdigest(),
+        "rules": findings,
+        "verified": verified,
+        "total": len(findings),
+        "state": "SCORED" if verified >= 3 else "REFUSED",
+    }
     return (OK if verified >= 3 else REFUSED), doc
 
 
@@ -1040,8 +1318,10 @@ def _print_predict(doc: Dict[str, Any]) -> int:
         print("            observed : %s" % f["observed"])
     print("verified %d/%d" % (doc["verified"], doc["total"]))
     if doc["state"] == "REFUSED":
-        print("REFUSED: fewer than 3 of 5 rules are falsifiable in this source -- the "
-              "extraction is a reading, not a result")
+        print(
+            "REFUSED: fewer than 3 of 5 rules are falsifiable in this source -- the "
+            "extraction is a reading, not a result"
+        )
     return OK if doc["state"] == "SCORED" else REFUSED
 
 
@@ -1085,10 +1365,12 @@ def bind_shard(rules_path: Path, shard_path: Path) -> Tuple[int, Dict[str, Any]]
     shard = json.loads(shard_path.read_text(encoding="utf-8"))
     held = {entry["sha256"] for entry in shard.get("files", [])}
     if rules["source"]["sha256"] not in held:
-        return REFUSED, {"state": "SOURCE-NOT-IN-SHARD", "reason":
-                         "rules came from sha %s, which is not among the %d file(s) this "
-                         "shard holds -- binding would invent a provenance link"
-                         % (rules["source"]["sha256"][:16], len(held))}
+        return REFUSED, {
+            "state": "SOURCE-NOT-IN-SHARD",
+            "reason": "rules came from sha %s, which is not among the %d file(s) this "
+            "shard holds -- binding would invent a provenance link"
+            % (rules["source"]["sha256"][:16], len(held)),
+        }
     geo = build_geometry(rules)
     gold = golden(rules, geo)
     shard["transubstantiation"] = {
@@ -1098,9 +1380,11 @@ def bind_shard(rules_path: Path, shard_path: Path) -> Tuple[int, Dict[str, Any]]
         "rules_sha256": hashlib.sha256(rules_path.read_bytes()).hexdigest(),
         "scene_shape": SCENE_SHAPE,
         "geometry_sha256": gold["geometry_sha256"],
-        "segments": gold["segments"], "leaves": gold["leaves"],
+        "segments": gold["segments"],
+        "leaves": gold["leaves"],
         "states": gold["states"],
-        "clock": rules["clock"], "phases": rules["phases"],
+        "clock": rules["clock"],
+        "phases": rules["phases"],
         "fidelity": rules["fidelity"],
     }
     # a shard that says doc-only while carrying a transubstantiable animation is
@@ -1110,13 +1394,18 @@ def bind_shard(rules_path: Path, shard_path: Path) -> Tuple[int, Dict[str, Any]]
     if not shard.get("entrypoint"):
         shard["entrypoint"] = Path(rules["source"]["path"]).name
     shard_path.write_text(json.dumps(shard, indent=1, sort_keys=True), encoding="utf-8")
-    return OK, {"state": "BOUND", "shard": str(shard_path),
-                "geometry_sha256": gold["geometry_sha256"],
-                "segments": gold["segments"], "leaves": gold["leaves"]}
+    return OK, {
+        "state": "BOUND",
+        "shard": str(shard_path),
+        "geometry_sha256": gold["geometry_sha256"],
+        "segments": gold["segments"],
+        "leaves": gold["leaves"],
+    }
 
 
 def selftest() -> Tuple[int, List[str]]:
     import tempfile
+
     lines: List[str] = []
     failures = 0
     with tempfile.TemporaryDirectory() as td:
@@ -1124,29 +1413,38 @@ def selftest() -> Tuple[int, List[str]]:
         ok_path.write_text(FIXTURE_OK, encoding="utf-8")
         try:
             rules = extract(ok_path)
-            lines.append("[PASS] positive fixture extracted: %d limbs, seed %d, phases %s"
-                         % (len(rules["limbs"]), rules["seed"]["value"],
-                            rules["phases"]))
+            lines.append(
+                "[PASS] positive fixture extracted: %d limbs, seed %d, phases %s"
+                % (len(rules["limbs"]), rules["seed"]["value"], rules["phases"])
+            )
             # every rule must cite a line, and the cited line must say it
             evidence = rule_evidence(rules)
-            lines.append("[PASS] every rule cites a line: %d rule(s), %d distinct line(s)"
-                         % (len(evidence), len({ln for _, ln, _ in evidence})))
+            lines.append(
+                "[PASS] every rule cites a line: %d rule(s), %d distinct line(s)"
+                % (len(evidence), len({ln for _, ln, _ in evidence}))
+            )
             rc_proof, proof_lines = prove(ok_path)
             if rc_proof != OK:
                 failures += 1
                 lines.extend(proof_lines[-4:])
             else:
-                lines.append("[PASS] every cited line contains its rule: %s"
-                             % proof_lines[-1])
+                lines.append(
+                    "[PASS] every cited line contains its rule: %s" % proof_lines[-1]
+                )
             rc_shift, shift_lines = shift_probe(ok_path, n=7)
             if rc_shift != OK:
                 failures += 1
             lines.extend(shift_lines)
             geo = build_geometry(rules)
             gold = golden(rules, geo)
-            lines.append("[PASS] geometry built: %d segments, %d leaves, digest %s"
-                         % (len(geo["segments"]), len(geo["leaves"]),
-                            gold["geometry_sha256"][:16]))
+            lines.append(
+                "[PASS] geometry built: %d segments, %d leaves, digest %s"
+                % (
+                    len(geo["segments"]),
+                    len(geo["leaves"]),
+                    gold["geometry_sha256"][:16],
+                )
+            )
         except ExtractError as exc:
             failures += 1
             lines.append("[FAIL] positive fixture refused: %s" % exc)
@@ -1156,11 +1454,15 @@ def selftest() -> Tuple[int, List[str]]:
         try:
             extract(bad_path)
             failures += 1
-            lines.append("[FAIL] NEGATIVE CONTROL: a source with no clock was ACCEPTED -- "
-                         "the extractor's findings are unvalidated")
+            lines.append(
+                "[FAIL] NEGATIVE CONTROL: a source with no clock was ACCEPTED -- "
+                "the extractor's findings are unvalidated"
+            )
         except ExtractError as exc:
-            lines.append("[PASS] negative control refused (%d named reason(s)): %s"
-                         % (len(exc.missing), exc.missing[0][:60]))
+            lines.append(
+                "[PASS] negative control refused (%d named reason(s)): %s"
+                % (len(exc.missing), exc.missing[0][:60])
+            )
 
         # tamper check: flipping a rule must refuse, not silently re-golden
         out = Path(td) / "scene"
@@ -1182,25 +1484,39 @@ def selftest() -> Tuple[int, List[str]]:
             (out / "rules.json").write_text(json.dumps(mutated), encoding="utf-8")
             rc3, v3 = verify(out)
             if rc3 == REFUSED and v3.get("state") == "TAMPERED":
-                lines.append("[PASS] a hand-edited rule is refused: %s" % v3["reason"][:70])
+                lines.append(
+                    "[PASS] a hand-edited rule is refused: %s" % v3["reason"][:70]
+                )
             else:
                 failures += 1
-                lines.append("[FAIL] a hand-edited rule was ACCEPTED: %s" % v3.get("state"))
+                lines.append(
+                    "[FAIL] a hand-edited rule was ACCEPTED: %s" % v3.get("state")
+                )
     return (0 if failures == 0 else 1), lines
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    ap = argparse.ArgumentParser(description="Transubstantiate a 2D canvas animation into 3D.")
+    ap = argparse.ArgumentParser(
+        description="Transubstantiate a 2D canvas animation into 3D."
+    )
     ap.add_argument("--extract", default="", help="the 2D animation source (html/js)")
     ap.add_argument("--forge", default="", help="a rules.json to build a 3D scene from")
     ap.add_argument("--verify", default="", help="a forged scene directory")
     ap.add_argument("--bind-shard", default="", help="a shard.json to bind rules into")
-    ap.add_argument("--predict", default="", help="a rules.json: score each rule at its use site")
-    ap.add_argument("--source", default="", help="override the source a --predict run measures")
+    ap.add_argument(
+        "--predict", default="", help="a rules.json: score each rule at its use site"
+    )
+    ap.add_argument(
+        "--source", default="", help="override the source a --predict run measures"
+    )
     ap.add_argument("--out", default="", help="output directory or rules path")
     ap.add_argument("--title", default="")
-    ap.add_argument("--lines", default="", help="cite the source line behind every extracted rule")
-    ap.add_argument("--shift-probe", default="", help="perturb the source and show every line moves")
+    ap.add_argument(
+        "--lines", default="", help="cite the source line behind every extracted rule"
+    )
+    ap.add_argument(
+        "--shift-probe", default="", help="perturb the source and show every line moves"
+    )
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args(argv)
 
@@ -1247,20 +1563,36 @@ def main(argv: Optional[List[str]] = None) -> int:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(rules, indent=1, sort_keys=True), encoding="utf-8")
         print("EXTRACTED %s" % target)
-        print("  source   %s (sha %s)" % (rules["source"]["path"],
-                                          rules["source"]["sha256"][:16]))
-        print("  clock    %s at line %d" % (rules["clock"]["hook"], rules["clock"]["line"]))
+        print(
+            "  source   %s (sha %s)"
+            % (rules["source"]["path"], rules["source"]["sha256"][:16])
+        )
+        print(
+            "  clock    %s at line %d"
+            % (rules["clock"]["hook"], rules["clock"]["line"])
+        )
         print("  phases   %s" % rules["phases"])
-        print("  seed     %d at line %d" % (rules["seed"]["value"], rules["seed"]["line"]))
-        print("  entities %d: %s" % (len(rules["limbs"]),
-                                     ", ".join(l["name"] for l in rules["limbs"])))
-        print("  fractal  depth %s, len %s, width %s"
-              % (rules["fractal"].get("root_depth"), rules["fractal"].get("root_len"),
-                 rules["fractal"].get("root_width")))
+        print(
+            "  seed     %d at line %d" % (rules["seed"]["value"], rules["seed"]["line"])
+        )
+        print(
+            "  entities %d: %s"
+            % (len(rules["limbs"]), ", ".join(limb["name"] for limb in rules["limbs"]))
+        )
+        print(
+            "  fractal  depth %s, len %s, width %s"
+            % (
+                rules["fractal"].get("root_depth"),
+                rules["fractal"].get("root_len"),
+                rules["fractal"].get("root_width"),
+            )
+        )
         return OK
 
     if args.predict:
-        rc, doc = predict(Path(args.predict), Path(args.source) if args.source else None)
+        rc, doc = predict(
+            Path(args.predict), Path(args.source) if args.source else None
+        )
         if rc == COULD_NOT_RUN:
             print("COULD NOT RUN: %s" % doc.get("reason"))
             return rc

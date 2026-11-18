@@ -37,6 +37,7 @@ USAGE
 
 Exit codes: 0 held, 1 REFUSED (a named reason), 2 COULD NOT RUN -- never folded together.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -63,24 +64,73 @@ OK, REFUSED, COULD_NOT_RUN = 0, 1, 2
 #: Every mirrored file gets a role from its extension. `code` is what a shard can be
 #: forged from; an asset is carried for provenance and never executed; `data` is neither.
 CODE_EXT = {
-    ".py": "python", ".js": "javascript", ".mjs": "javascript", ".ts": "typescript",
-    ".c": "c", ".h": "c", ".cc": "cpp", ".cpp": "cpp", ".hpp": "cpp", ".cs": "csharp",
-    ".rs": "rust", ".go": "go", ".java": "java", ".kt": "kotlin", ".rb": "ruby",
-    ".lua": "lua", ".gd": "gdscript", ".shader": "shader", ".glsl": "shader",
-    ".hlsl": "shader", ".wgsl": "shader", ".json": "data", ".yaml": "data",
+    ".py": "python",
+    ".js": "javascript",
+    ".mjs": "javascript",
+    ".ts": "typescript",
+    ".c": "c",
+    ".h": "c",
+    ".cc": "cpp",
+    ".cpp": "cpp",
+    ".hpp": "cpp",
+    ".cs": "csharp",
+    ".rs": "rust",
+    ".go": "go",
+    ".java": "java",
+    ".kt": "kotlin",
+    ".rb": "ruby",
+    ".lua": "lua",
+    ".gd": "gdscript",
+    ".shader": "shader",
+    ".glsl": "shader",
+    ".hlsl": "shader",
+    ".wgsl": "shader",
+    ".json": "data",
+    ".yaml": "data",
 }
 ASSET_EXT = {
-    ".png": "image", ".jpg": "image", ".jpeg": "image", ".gif": "image",
-    ".webp": "image", ".tga": "image", ".bmp": "image", ".svg": "image",
-    ".wav": "audio", ".ogg": "audio", ".mp3": "audio", ".flac": "audio",
-    ".glb": "mesh", ".gltf": "mesh", ".fbx": "mesh", ".obj": "mesh", ".blend": "blend",
-    ".ttf": "font", ".otf": "font", ".woff": "font", ".woff2": "font",
+    ".png": "image",
+    ".jpg": "image",
+    ".jpeg": "image",
+    ".gif": "image",
+    ".webp": "image",
+    ".tga": "image",
+    ".bmp": "image",
+    ".svg": "image",
+    ".wav": "audio",
+    ".ogg": "audio",
+    ".mp3": "audio",
+    ".flac": "audio",
+    ".glb": "mesh",
+    ".gltf": "mesh",
+    ".fbx": "mesh",
+    ".obj": "mesh",
+    ".blend": "blend",
+    ".ttf": "font",
+    ".otf": "font",
+    ".woff": "font",
+    ".woff2": "font",
 }
 
 #: Never mirrored: these are build output and vendor trees, and a mirror that includes
 #: them reports a game that is 40x its actual size.
-SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", "target", "build",
-             "dist", "obj", ".idea", ".vs", "Library", "Temp", "Logs", "Binaries"}
+SKIP_DIRS = {
+    ".git",
+    "node_modules",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "target",
+    "build",
+    "dist",
+    "obj",
+    ".idea",
+    ".vs",
+    "Library",
+    "Temp",
+    "Logs",
+    "Binaries",
+}
 
 #: The lowest a shard may go. A shard with no entrypoint cannot be forged, because there
 #: is nothing to be the origin of the arena it generates.
@@ -90,6 +140,7 @@ MAX_MIRROR_FILES = 50000
 # --------------------------------------------------------------------------- #
 # Hashing
 # --------------------------------------------------------------------------- #
+
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
@@ -105,15 +156,19 @@ def sha256_text(text: str) -> str:
 
 def shard_id(name: str, entries: Sequence[Dict[str, Any]]) -> str:
     """Content-addressed: the same slice always gets the same id, and a changed file
-    changes the id. A shard whose id cannot change is a shard whose drift goes unseen."""
-    material = "\n".join("%s:%s" % (entry["path"], entry["sha256"])
-                         for entry in sorted(entries, key=lambda e: e["path"]))
+    changes the id. A shard whose id cannot change is a shard whose drift goes unseen.
+    """
+    material = "\n".join(
+        "%s:%s" % (entry["path"], entry["sha256"])
+        for entry in sorted(entries, key=lambda e: e["path"])
+    )
     return "%s@sha256:%s" % (name, sha256_text(material))
 
 
 # --------------------------------------------------------------------------- #
 # L0 -- mirror
 # --------------------------------------------------------------------------- #
+
 
 def classify(relative: str) -> Tuple[str, str]:
     """(role, kind) for the schema's vocabulary: code | asset | data."""
@@ -126,15 +181,17 @@ def classify(relative: str) -> Tuple[str, str]:
     return "data", "other"
 
 
-def mirror(root: str, out_dir: Optional[str] = None,
-           max_files: int = MAX_MIRROR_FILES) -> Tuple[int, Dict[str, Any]]:
+def mirror(
+    root: str, out_dir: Optional[str] = None, max_files: int = MAX_MIRROR_FILES
+) -> Tuple[int, Dict[str, Any]]:
     """Walk the tree once, hash every file, write `mirror.json`. Returns (exit, doc)."""
     base = Path(root).expanduser()
     if not base.exists() or not base.is_dir():
-        return COULD_NOT_RUN, {"state": "NO-SOURCE",
-                               "reason": "%s is not a directory: there is nothing to "
-                                         "mirror and an empty mirror is not a small game"
-                                         % base}
+        return COULD_NOT_RUN, {
+            "state": "NO-SOURCE",
+            "reason": "%s is not a directory: there is nothing to "
+            "mirror and an empty mirror is not a small game" % base,
+        }
 
     entries: List[Dict[str, Any]] = []
     skipped: List[str] = []
@@ -160,9 +217,15 @@ def mirror(root: str, out_dir: Optional[str] = None,
                     # quietly made `pruned` report a pruner that took less than it did,
                     # which is the same defect as reporting a pruned tree as absent.
                     unreadable += 1
-            pruned.append({"path": str(path.relative_to(base)).replace("\\", "/"),
-                           "reason": "SKIP_DIRS", "files": files, "bytes": size,
-                           "unreadable": unreadable})
+            pruned.append(
+                {
+                    "path": str(path.relative_to(base)).replace("\\", "/"),
+                    "reason": "SKIP_DIRS",
+                    "files": files,
+                    "bytes": size,
+                    "unreadable": unreadable,
+                }
+            )
         dirnames[:] = sorted(name for name in dirnames if name not in SKIP_DIRS)
         for name in sorted(filenames):
             path = Path(current) / name
@@ -175,18 +238,26 @@ def mirror(root: str, out_dir: Optional[str] = None,
                 continue
             relative = str(path.relative_to(base)).replace("\\", "/")
             role, kind = classify(relative)
-            entries.append({"path": relative, "sha256": sha256_file(path),
-                            "size_bytes": size, "role": role, "kind": kind})
+            entries.append(
+                {
+                    "path": relative,
+                    "sha256": sha256_file(path),
+                    "size_bytes": size,
+                    "role": role,
+                    "kind": kind,
+                }
+            )
             total_bytes += size
             if len(entries) >= max_files:
                 dirnames[:] = []
                 break
 
     if not entries:
-        return REFUSED, {"state": "EMPTY-SOURCE",
-                         "reason": "%s holds no files to mirror (only skipped "
-                                   "directories); 0 files is a finding, not a game"
-                                   % base}
+        return REFUSED, {
+            "state": "EMPTY-SOURCE",
+            "reason": "%s holds no files to mirror (only skipped "
+            "directories); 0 files is a finding, not a game" % base,
+        }
 
     kinds: Dict[str, int] = {}
     for entry in entries:
@@ -196,19 +267,27 @@ def mirror(root: str, out_dir: Optional[str] = None,
         "source": str(base),
         # absolute, so `--shatter` can copy the payload from wherever it is invoked
         "source_root": str(base.resolve()),
-        "mirrored_at_sha256": sha256_text(json.dumps(
-            [[entry["path"], entry["sha256"]] for entry in entries], sort_keys=True)),
-        "totals": {"files": len(entries), "bytes": total_bytes,
-                   "code": sum(1 for e in entries if e["role"] == "code"),
-                   "asset": sum(1 for e in entries if e["role"] == "asset"),
-                   "data": sum(1 for e in entries if e["role"] == "data"),
-                   "by_kind": dict(sorted(kinds.items()))},
+        "mirrored_at_sha256": sha256_text(
+            json.dumps(
+                [[entry["path"], entry["sha256"]] for entry in entries], sort_keys=True
+            )
+        ),
+        "totals": {
+            "files": len(entries),
+            "bytes": total_bytes,
+            "code": sum(1 for e in entries if e["role"] == "code"),
+            "asset": sum(1 for e in entries if e["role"] == "asset"),
+            "data": sum(1 for e in entries if e["role"] == "data"),
+            "by_kind": dict(sorted(kinds.items())),
+        },
         "skipped": skipped[:50],
         "pruned": pruned,
-        "not_mirrored": {"dirs": len(pruned),
-                         "files": sum(p["files"] for p in pruned),
-                         "bytes": sum(p["bytes"] for p in pruned),
-                         "unreadable": sum(p["unreadable"] for p in pruned)},
+        "not_mirrored": {
+            "dirs": len(pruned),
+            "files": sum(p["files"] for p in pruned),
+            "bytes": sum(p["bytes"] for p in pruned),
+            "unreadable": sum(p["unreadable"] for p in pruned),
+        },
         "files": entries,
     }
     directory = Path(out_dir) if out_dir else Path.cwd() / STATE
@@ -222,6 +301,7 @@ def mirror(root: str, out_dir: Optional[str] = None,
 # L1 -- shatter
 # --------------------------------------------------------------------------- #
 
+
 def _group_key(relative: str) -> str:
     """A shard is a coherent slice. Top-level directory is the only grouping a stranger
     can defend: it survives a rename, it matches how people talk about their own tree,
@@ -230,15 +310,21 @@ def _group_key(relative: str) -> str:
     return parts[0] if len(parts) > 1 else "(root)"
 
 
-def shatter(mirror_path: Optional[str] = None, out_dir: Optional[str] = None,
-            per_shard: int = 24, payload_cap: int = 2 * 1024 * 1024,
-            genre: str = "arena") -> Tuple[int, Dict[str, Any]]:
+def shatter(
+    mirror_path: Optional[str] = None,
+    out_dir: Optional[str] = None,
+    per_shard: int = 24,
+    payload_cap: int = 2 * 1024 * 1024,
+    genre: str = "arena",
+) -> Tuple[int, Dict[str, Any]]:
     """Cut the mirror into content-addressed shards, honouring the low-end ceilings."""
     path = Path(mirror_path) if mirror_path else Path.cwd() / STATE / MIRROR_FILE
     if not path.exists():
-        return COULD_NOT_RUN, {"state": "NO-MIRROR",
-                               "reason": "no mirror at %s -- run --mirror first; a shatter "
-                                         "without a mirror is a guess about a game" % path}
+        return COULD_NOT_RUN, {
+            "state": "NO-MIRROR",
+            "reason": "no mirror at %s -- run --mirror first; a shatter "
+            "without a mirror is a guess about a game" % path,
+        }
     doc = json.loads(path.read_text(encoding="utf-8"))
     files = doc.get("files") or []
     if not files:
@@ -255,8 +341,9 @@ def shatter(mirror_path: Optional[str] = None, out_dir: Optional[str] = None,
     # A game whose files sit directly in its root is still a game: name that group after
     # the directory it came from rather than after the word "root", so a forged shard
     # reports "highend-duel" and not "root".
-    source_name = re.sub(r"[^a-z0-9-]+", "-",
-                         Path(str(doc.get("source") or "game")).name.lower()).strip("-")
+    source_name = re.sub(
+        r"[^a-z0-9-]+", "-", Path(str(doc.get("source") or "game")).name.lower()
+    ).strip("-")
     written: List[Dict[str, Any]] = []
     refused: List[Dict[str, Any]] = []
     for group, entries in sorted(groups.items()):
@@ -264,7 +351,7 @@ def shatter(mirror_path: Optional[str] = None, out_dir: Optional[str] = None,
             group = source_name
         # Chunk an oversized group into per_shard slices; the id keeps them distinct
         # because the file list is part of the hash.
-        chunks = [entries[i:i + per_shard] for i in range(0, len(entries), per_shard)]
+        chunks = [entries[i : i + per_shard] for i in range(0, len(entries), per_shard)]
         for number, chunk in enumerate(chunks, 1):
             payload = sum(entry["size_bytes"] for entry in chunk)
             name = re.sub(r"[^a-z0-9-]+", "-", group.lower()).strip("-") or "root"
@@ -274,8 +361,14 @@ def shatter(mirror_path: Optional[str] = None, out_dir: Optional[str] = None,
                 # Over the ceiling is a REFUSAL with the number, not a silent split: a
                 # shard that quietly exceeds its budget fails the validator later, at a
                 # point where nobody remembers which slice it was.
-                refused.append({"group": group, "shard": name, "payload_bytes": payload,
-                                "reason": "payload %d > cap %d" % (payload, payload_cap)})
+                refused.append(
+                    {
+                        "group": group,
+                        "shard": name,
+                        "payload_bytes": payload,
+                        "reason": "payload %d > cap %d" % (payload, payload_cap),
+                    }
+                )
                 continue
             entry_id = shard_id(name, chunk)
             code = [entry for entry in chunk if entry["role"] == "code"]
@@ -285,36 +378,64 @@ def shatter(mirror_path: Optional[str] = None, out_dir: Optional[str] = None,
                 "version": "1.0.0",
                 "genre": genre if code else "doc-only",
                 "tier": "lowend",
-                "files": [{"path": entry["path"].split("/")[-1],
-                           "sha256": entry["sha256"], "role": entry["role"],
-                           "size_bytes": entry["size_bytes"]} for entry in chunk],
+                "files": [
+                    {
+                        "path": entry["path"].split("/")[-1],
+                        "sha256": entry["sha256"],
+                        "role": entry["role"],
+                        "size_bytes": entry["size_bytes"],
+                    }
+                    for entry in chunk
+                ],
                 "entrypoint": entrypoint,
                 "loader": "wasm3-det",
                 "sim_hz": 60,
-                "golden_run": {"input": "", "ticks": 0, "state_sha256": "0" * 64,
-                               "token": GOLDEN_TOKEN, "headless": True},
+                "golden_run": {
+                    "input": "",
+                    "ticks": 0,
+                    "state_sha256": "0" * 64,
+                    "token": GOLDEN_TOKEN,
+                    "headless": True,
+                },
                 "capabilities": [],
                 "hubs": [],
-                "budget": {"payload_bytes_max": payload_cap,
-                           "tick_budget_ms": {"p50": 0.0, "p99": 0.0,
-                                              "scene": "unmeasured: not forged"}},
+                "budget": {
+                    "payload_bytes_max": payload_cap,
+                    "tick_budget_ms": {
+                        "p50": 0.0,
+                        "p99": 0.0,
+                        "scene": "unmeasured: not forged",
+                    },
+                },
                 "licence": "UNKNOWN -- per-file provenance in provenance[]",
                 "author_pubkey": "",
                 "execution_model": "resident_host",
                 "env_allowlist": [],
-                "tick_budget": {"p50_ms": 0.0, "p99_ms": 0.0,
-                                "scene": "unmeasured: not forged"},
+                "tick_budget": {
+                    "p50_ms": 0.0,
+                    "p99_ms": 0.0,
+                    "scene": "unmeasured: not forged",
+                },
                 "competitive": False,
-                "provenance": [{"file": entry["path"], "sha256": entry["sha256"],
-                                "origin": "mirror:%s" % doc.get("source", "?"),
-                                "tier": "A"} for entry in chunk],
+                "provenance": [
+                    {
+                        "file": entry["path"],
+                        "sha256": entry["sha256"],
+                        "origin": "mirror:%s" % doc.get("source", "?"),
+                        "tier": "A",
+                    }
+                    for entry in chunk
+                ],
                 # shardex's own fields, outside the METTHEW vocabulary on purpose: the
                 # schema is additionalProperties:false and this tool does not get to
                 # widen another project's contract.
-                "shardex": {"forged": False, "state": "SLICE",
-                            "group": group,
-                            "mirror_sha256": doc.get("mirrored_at_sha256", ""),
-                            "note": "a slice is not a game: --forge it to get a golden run"},
+                "shardex": {
+                    "forged": False,
+                    "state": "SLICE",
+                    "group": group,
+                    "mirror_sha256": doc.get("mirrored_at_sha256", ""),
+                    "note": "a slice is not a game: --forge it to get a golden run",
+                },
             }
             target = shards_dir / name
             target.mkdir(parents=True, exist_ok=True)
@@ -336,27 +457,55 @@ def shatter(mirror_path: Optional[str] = None, out_dir: Optional[str] = None,
                     continue
                 got = hashlib.sha256(data).hexdigest()
                 if got != entry["sha256"]:
-                    dishonest.append("%s: mirror said %s, bytes %s"
-                                     % (entry["path"], entry["sha256"][:16], got[:16]))
+                    dishonest.append(
+                        "%s: mirror said %s, bytes %s"
+                        % (entry["path"], entry["sha256"][:16], got[:16])
+                    )
                     continue
                 (target / entry["path"].split("/")[-1]).write_bytes(data)
             if unreadable or dishonest:
                 shutil.rmtree(target, ignore_errors=True)
-                refused.append({"group": group, "shard": name, "payload_bytes": payload,
-                                "reason": "payload not carried: %s"
-                                          % ("; ".join((["unreadable " + ", ".join(unreadable)]
-                                                       if unreadable else []) + dishonest))})
+                refused.append(
+                    {
+                        "group": group,
+                        "shard": name,
+                        "payload_bytes": payload,
+                        "reason": "payload not carried: %s"
+                        % (
+                            "; ".join(
+                                (
+                                    ["unreadable " + ", ".join(unreadable)]
+                                    if unreadable
+                                    else []
+                                )
+                                + dishonest
+                            )
+                        ),
+                    }
+                )
                 continue
-            (target / SHARD_FILE).write_text(json.dumps(manifest, indent=1),
-                                             encoding="utf-8")
-            written.append({"shard": name, "id": entry_id, "files": len(chunk),
-                            "payload_bytes": payload, "code_files": len(code),
-                            "path": str(target)})
+            (target / SHARD_FILE).write_text(
+                json.dumps(manifest, indent=1), encoding="utf-8"
+            )
+            written.append(
+                {
+                    "shard": name,
+                    "id": entry_id,
+                    "files": len(chunk),
+                    "payload_bytes": payload,
+                    "code_files": len(code),
+                    "path": str(target),
+                }
+            )
 
-    summary = {"state": "SHATTERED" if written else "REFUSED",
-               "source": doc.get("source", ""), "groups": len(groups),
-               "shards": written, "refused": refused,
-               "written_to": str(shards_dir)}
+    summary = {
+        "state": "SHATTERED" if written else "REFUSED",
+        "source": doc.get("source", ""),
+        "groups": len(groups),
+        "shards": written,
+        "refused": refused,
+        "written_to": str(shards_dir),
+    }
     return (OK if written else REFUSED), summary
 
 
@@ -412,8 +561,11 @@ def fnv1a64(payload: str) -> str:
     return "%08x%08x" % (h1, h2)
 
 
-def simulate(tunables: Dict[str, Any], ticks: int = GOLDEN_TICKS,
-             jumps: Sequence[int] = GOLDEN_JUMPS) -> Dict[str, Any]:
+def simulate(
+    tunables: Dict[str, Any],
+    ticks: int = GOLDEN_TICKS,
+    jumps: Sequence[int] = GOLDEN_JUMPS,
+) -> Dict[str, Any]:
     """The arena's authoritative tick. Identical arithmetic to flame.html's step()."""
     dt = 1.0 / float(tunables["sim_hz"])
     speed = float(tunables["speed"])
@@ -456,23 +608,35 @@ def simulate(tunables: Dict[str, Any], ticks: int = GOLDEN_TICKS,
                 collected = collected | (1 << index)
 
     state = "%.4f,%.4f,%.4f,%.4f,%.4f,%d" % (x, y, z, vy, 0.0, collected)
-    return {"ticks": ticks, "state": state, "state_sha256": fnv1a64(state),
-            "collected": collected, "orbs": orbs}
+    return {
+        "ticks": ticks,
+        "state": state,
+        "state_sha256": fnv1a64(state),
+        "collected": collected,
+        "orbs": orbs,
+    }
 
 
 def golden(tunables: Dict[str, Any]) -> Dict[str, Any]:
     run = simulate(tunables)
-    return {"state_sha256": run["state_sha256"], "ticks": run["ticks"],
-            "final_state": run["state"], "token": GOLDEN_TOKEN,
-            "headless": True, "tunables": tunables}
+    return {
+        "state_sha256": run["state_sha256"],
+        "ticks": run["ticks"],
+        "final_state": run["state"],
+        "token": GOLDEN_TOKEN,
+        "headless": True,
+        "tunables": tunables,
+    }
 
 
 # --------------------------------------------------------------------------- #
 # L2 -- forge: transubstantiate a shard into FLAME
 # --------------------------------------------------------------------------- #
 
-def _tunables_for(manifest: Dict[str, Any], overrides: Optional[Dict[str, Any]] = None
-                  ) -> Dict[str, Any]:
+
+def _tunables_for(
+    manifest: Dict[str, Any], overrides: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """The arena is generated FROM the shard: its size from the payload, its orb count
     from the file count, its seed from the content hash. That is what makes the result
     traceable to this shard instead of being one generic toy with a label on it."""
@@ -490,22 +654,29 @@ def _tunables_for(manifest: Dict[str, Any], overrides: Optional[Dict[str, Any]] 
     return tunables
 
 
-def forge(shard_dir: str, out_dir: str, overrides: Optional[Dict[str, Any]] = None
-          ) -> Tuple[int, Dict[str, Any]]:
+def forge(
+    shard_dir: str, out_dir: str, overrides: Optional[Dict[str, Any]] = None
+) -> Tuple[int, Dict[str, Any]]:
     """Write `flame.json` + `flame.html` for a shard, and fill in its golden run."""
     source = Path(shard_dir)
     manifest_path = source / SHARD_FILE
     if not manifest_path.exists():
-        return COULD_NOT_RUN, {"state": "NO-SHARD",
-                               "reason": "%s holds no %s" % (source, SHARD_FILE)}
+        return COULD_NOT_RUN, {
+            "state": "NO-SHARD",
+            "reason": "%s holds no %s" % (source, SHARD_FILE),
+        }
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if not (manifest.get("files") or []):
-        return REFUSED, {"state": "EMPTY-SHARD",
-                         "reason": "a shard with no files has nothing to forge"}
+        return REFUSED, {
+            "state": "EMPTY-SHARD",
+            "reason": "a shard with no files has nothing to forge",
+        }
     if not manifest.get("entrypoint"):
-        return REFUSED, {"state": "NO-ENTRYPOINT",
-                         "reason": "a shard with no entrypoint has no origin to forge "
-                                   "an arena from; give it one or leave it a slice"}
+        return REFUSED, {
+            "state": "NO-ENTRYPOINT",
+            "reason": "a shard with no entrypoint has no origin to forge "
+            "an arena from; give it one or leave it a slice",
+        }
 
     tunables = _tunables_for(manifest, overrides)
     run = golden(tunables)
@@ -518,39 +689,56 @@ def forge(shard_dir: str, out_dir: str, overrides: Optional[Dict[str, Any]] = No
         "shard_name": source.name,
         "source": str(source),
         "fidelity": "ARENA-FROM-SHARD: parameters generated from this shard; the "
-                    "original game's rules are NOT extracted (see SHARDEX.md L4)",
+        "original game's rules are NOT extracted (see SHARDEX.md L4)",
         "tunables": tunables,
-        "golden": {"state_sha256": run["state_sha256"], "ticks": run["ticks"],
-                   "token": run["token"], "headless": True},
-        "controls": {"move": "A/D or left/right", "jump": "space or W",
-                     "click": "click or drag the arena: walk there (the click also hops)",
-                     "restart": "R", "tune": "edit tunables in flame.json, reload"},
+        "golden": {
+            "state_sha256": run["state_sha256"],
+            "ticks": run["ticks"],
+            "token": run["token"],
+            "headless": True,
+        },
+        "controls": {
+            "move": "A/D or left/right",
+            "jump": "space or W",
+            "click": "click or drag the arena: walk there (the click also hops)",
+            "restart": "R",
+            "tune": "edit tunables in flame.json, reload",
+        },
         "for_tournaments": {
             "deterministic": "fixed-step sim at sim_hz; the golden hash covers sim state "
-                             "only, never a frame",
+            "only, never a frame",
             "tweak_surface": list(tunables.keys()),
             "record": "python shardex.py --golden <shard> --tune k=v ... writes the hash "
-                      "a bracket must agree on",
+            "a bracket must agree on",
         },
     }
     (target / FLAME_JSON).write_text(json.dumps(flame, indent=1), encoding="utf-8")
-    (target / FLAME_HTML).write_text(_FLAME_HTML.replace(
-        "__FLAME_JSON__", json.dumps(flame, sort_keys=True)), encoding="utf-8")
+    (target / FLAME_HTML).write_text(
+        _FLAME_HTML.replace("__FLAME_JSON__", json.dumps(flame, sort_keys=True)),
+        encoding="utf-8",
+    )
 
-    manifest["golden_run"] = {"input": "scripted: right 60 ticks, left 60 ticks, jumps "
-                                       "at ticks 10 and 70",
-                              "ticks": run["ticks"],
-                              "state_sha256": run["state_sha256"],
-                              "token": GOLDEN_TOKEN, "headless": True}
+    manifest["golden_run"] = {
+        "input": "scripted: right 60 ticks, left 60 ticks, jumps " "at ticks 10 and 70",
+        "ticks": run["ticks"],
+        "state_sha256": run["state_sha256"],
+        "token": GOLDEN_TOKEN,
+        "headless": True,
+    }
     manifest.setdefault("shardex", {})
-    manifest["shardex"].update({"forged": True, "state": "FORGED",
-                                "flame": str(target),
-                                "tunables": tunables})
+    manifest["shardex"].update(
+        {"forged": True, "state": "FORGED", "flame": str(target), "tunables": tunables}
+    )
     (source / SHARD_FILE).write_text(json.dumps(manifest, indent=1), encoding="utf-8")
 
-    return OK, {"state": "FORGED", "shard": manifest["id"], "out": str(target),
-                "golden": flame["golden"], "tunables": tunables,
-                "files": [str(target / FLAME_JSON), str(target / FLAME_HTML)]}
+    return OK, {
+        "state": "FORGED",
+        "shard": manifest["id"],
+        "out": str(target),
+        "golden": flame["golden"],
+        "tunables": tunables,
+        "files": [str(target / FLAME_JSON), str(target / FLAME_HTML)],
+    }
 
 
 def verify(flame_dir: str) -> Tuple[int, Dict[str, Any]]:
@@ -558,28 +746,38 @@ def verify(flame_dir: str) -> Tuple[int, Dict[str, Any]]:
     target = Path(flame_dir)
     flame_path = target / FLAME_JSON
     if not flame_path.exists():
-        return COULD_NOT_RUN, {"state": "NO-FLAME", "reason": "%s holds no %s"
-                                                          % (target, FLAME_JSON)}
+        return COULD_NOT_RUN, {
+            "state": "NO-FLAME",
+            "reason": "%s holds no %s" % (target, FLAME_JSON),
+        }
     flame = json.loads(flame_path.read_text(encoding="utf-8"))
     claimed = str(flame.get("golden", {}).get("state_sha256") or "")
     recomputed = golden(flame["tunables"])["state_sha256"]
     html = target / FLAME_HTML
     if not html.exists():
-        return REFUSED, {"state": "NO-SHELL",
-                         "reason": "flame.json without flame.html is a config, not a game"}
+        return REFUSED, {
+            "state": "NO-SHELL",
+            "reason": "flame.json without flame.html is a config, not a game",
+        }
     body = html.read_text(encoding="utf-8")
     problems: List[str] = []
     if claimed != recomputed:
-        problems.append("the claimed golden %s != recomputed %s" % (claimed[:16],
-                                                                   recomputed[:16]))
+        problems.append(
+            "the claimed golden %s != recomputed %s" % (claimed[:16], recomputed[:16])
+        )
     if "__FLAME_JSON__" in body:
-        problems.append("the shell still carries its placeholder: the forge did not "
-                        "inject this shard")
+        problems.append(
+            "the shell still carries its placeholder: the forge did not "
+            "inject this shard"
+        )
     if flame.get("shard") and flame["shard"] not in body:
         problems.append("the shell does not name its shard (%s)" % flame["shard"][:24])
-    return (REFUSED if problems else OK), {"state": "REFUSED" if problems else "VERIFIED",
-                                           "problems": problems,
-                                           "claimed": claimed, "recomputed": recomputed}
+    return (REFUSED if problems else OK), {
+        "state": "REFUSED" if problems else "VERIFIED",
+        "problems": problems,
+        "claimed": claimed,
+        "recomputed": recomputed,
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -890,14 +1088,23 @@ requestAnimationFrame(frame);
 # doctor / selftest / cli
 # --------------------------------------------------------------------------- #
 
+
 def doctor() -> int:
     checks: List[Tuple[str, bool, str]] = []
     current = sys.version_info[:3]
     checks.append(("python", current >= (3, 9), "%d.%d.%d (stdlib only)" % current))
     schema = Path(__file__).resolve().parent / "schemas" / "shard.schema.json"
-    checks.append(("metthew schema", schema.exists(),
-                   str(schema) if schema.exists() else
-                   "MISSING: shards cannot be checked against the project's own contract"))
+    checks.append(
+        (
+            "metthew schema",
+            schema.exists(),
+            (
+                str(schema)
+                if schema.exists()
+                else "MISSING: shards cannot be checked against the project's own contract"
+            ),
+        )
+    )
     try:
         with tempfile.TemporaryDirectory() as tmp:
             probe = Path(tmp) / "probe.txt"
@@ -905,13 +1112,28 @@ def doctor() -> int:
         checks.append(("state writable", True, "temp probe"))
     except OSError as exc:
         checks.append(("state writable", False, str(exc)))
-    browser = [path for path in (
-        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe") if Path(path).exists()]
-    found = shutil.which("chrome") or shutil.which("chromium") or (browser[0] if browser else "")
-    checks.append(("browser (optional)", True,
-                   found or "none found -- forging still works; only the golden hash "
-                            "agreement cannot be checked here"))
+    browser = [
+        path
+        for path in (
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        )
+        if Path(path).exists()
+    ]
+    found = (
+        shutil.which("chrome")
+        or shutil.which("chromium")
+        or (browser[0] if browser else "")
+    )
+    checks.append(
+        (
+            "browser (optional)",
+            True,
+            found
+            or "none found -- forging still works; only the golden hash "
+            "agreement cannot be checked here",
+        )
+    )
     failures = [name for name, ok, _ in checks if not ok]
     print("SHARDEX doctor")
     for name, ok, detail in checks:
@@ -940,9 +1162,11 @@ def selftest() -> Tuple[int, List[str]]:
         (game / "assets").mkdir()
         (game / "docs").mkdir()
         (game / "src" / "main.lua").write_text(
-            "-- the rules\nfunction update(dt) return dt end\n", encoding="utf-8")
+            "-- the rules\nfunction update(dt) return dt end\n", encoding="utf-8"
+        )
         (game / "src" / "player.lua").write_text(
-            "player = { speed = 6, jump = 7 }\n", encoding="utf-8")
+            "player = { speed = 6, jump = 7 }\n", encoding="utf-8"
+        )
         (game / "assets" / "sprite.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"\0" * 64)
         (game / "docs" / "README.md").write_text("# the game\n", encoding="utf-8")
 
@@ -950,60 +1174,95 @@ def selftest() -> Tuple[int, List[str]]:
 
         # L0
         code, doc = mirror(str(game), out_dir=str(work))
-        check("L0 mirror hashes every file", code == OK and doc["totals"]["files"] == 4,
-              str(doc.get("totals")))
-        check("L0 a missing source is COULD NOT RUN, not an empty mirror",
-              mirror(str(Path(tmp) / "nope"), out_dir=str(work))[0] == COULD_NOT_RUN)
+        check(
+            "L0 mirror hashes every file",
+            code == OK and doc["totals"]["files"] == 4,
+            str(doc.get("totals")),
+        )
+        check(
+            "L0 a missing source is COULD NOT RUN, not an empty mirror",
+            mirror(str(Path(tmp) / "nope"), out_dir=str(work))[0] == COULD_NOT_RUN,
+        )
         empty = Path(tmp) / "empty"
         empty.mkdir()
-        check("L0 an empty source is REFUSED, naming the absence",
-              mirror(str(empty), out_dir=str(work))[0] == REFUSED)
+        check(
+            "L0 an empty source is REFUSED, naming the absence",
+            mirror(str(empty), out_dir=str(work))[0] == REFUSED,
+        )
 
         # L1
         code, shards = shatter(str(work / MIRROR_FILE), out_dir=str(work))
-        check("L1 shatter makes one shard per top-level group",
-              code == OK and len(shards["shards"]) == 3, str(shards.get("shards")))
+        check(
+            "L1 shatter makes one shard per top-level group",
+            code == OK and len(shards["shards"]) == 3,
+            str(shards.get("shards")),
+        )
         first = Path(shards["shards"][0]["path"]) / SHARD_FILE
         manifest = json.loads(first.read_text(encoding="utf-8"))
-        check("L1 a shard is content-addressed and NOT yet forged",
-              manifest["id"].startswith(manifest["id"].split("@")[0] + "@sha256:")
-              and manifest["shardex"]["forged"] is False)
+        check(
+            "L1 a shard is content-addressed and NOT yet forged",
+            manifest["id"].startswith(manifest["id"].split("@")[0] + "@sha256:")
+            and manifest["shardex"]["forged"] is False,
+        )
 
         # L2 -- the shard with code in it is the one that can be forged
         shard_names = [entry["shard"] for entry in shards["shards"]]
         src_shard = next(name for name in shard_names if name.startswith("src"))
         flame_dir = Path(tmp) / "flame-src"
         code, forged_src = forge(str(work / SHARDS_DIR / src_shard), str(flame_dir))
-        check("L2 forge writes a shell and computes a golden run",
-              code == OK and (flame_dir / FLAME_HTML).exists(), str(forged_src))
-        check("L2 the golden hash is 16 hex characters",
-              bool(re.fullmatch(r"[0-9a-f]{16}", forged_src["golden"]["state_sha256"])),
-              str(forged_src.get("golden")))
-        check("L2 the forged manifest stops claiming to be an unforged slice",
-              json.loads((work / SHARDS_DIR / src_shard / SHARD_FILE)
-                         .read_text(encoding="utf-8"))["shardex"]["forged"] is True)
+        check(
+            "L2 forge writes a shell and computes a golden run",
+            code == OK and (flame_dir / FLAME_HTML).exists(),
+            str(forged_src),
+        )
+        check(
+            "L2 the golden hash is 16 hex characters",
+            bool(re.fullmatch(r"[0-9a-f]{16}", forged_src["golden"]["state_sha256"])),
+            str(forged_src.get("golden")),
+        )
+        check(
+            "L2 the forged manifest stops claiming to be an unforged slice",
+            json.loads(
+                (work / SHARDS_DIR / src_shard / SHARD_FILE).read_text(encoding="utf-8")
+            )["shardex"]["forged"]
+            is True,
+        )
 
         # L2 negative control: a shard with no entrypoint cannot be forged
         docs_shard = next(name for name in shard_names if name.startswith("docs"))
-        code, doc = forge(str(work / SHARDS_DIR / docs_shard), str(Path(tmp) / "flame-docs"))
-        check("L2 a shard with no entrypoint is REFUSED, not forged empty",
-              code == REFUSED and doc["state"] == "NO-ENTRYPOINT", str(doc))
+        code, doc = forge(
+            str(work / SHARDS_DIR / docs_shard), str(Path(tmp) / "flame-docs")
+        )
+        check(
+            "L2 a shard with no entrypoint is REFUSED, not forged empty",
+            code == REFUSED and doc["state"] == "NO-ENTRYPOINT",
+            str(doc),
+        )
 
         # L3
-        tuned_code, tuned = forge(str(work / SHARDS_DIR / src_shard),
-                                  str(Path(tmp) / "flame-tuned"),
-                                  overrides={"speed": 9, "orbs": 9})
-        check("L3 a tuned config moves the golden hash",
-              tuned_code == OK and
-              tuned["golden"]["state_sha256"] != forged_src["golden"]["state_sha256"])
-        check("L3 tuning is recorded in the flame config",
-              '"orbs": 9' in (Path(tmp) / "flame-tuned" / FLAME_JSON)
-              .read_text(encoding="utf-8"))
+        tuned_code, tuned = forge(
+            str(work / SHARDS_DIR / src_shard),
+            str(Path(tmp) / "flame-tuned"),
+            overrides={"speed": 9, "orbs": 9},
+        )
+        check(
+            "L3 a tuned config moves the golden hash",
+            tuned_code == OK
+            and tuned["golden"]["state_sha256"] != forged_src["golden"]["state_sha256"],
+        )
+        check(
+            "L3 tuning is recorded in the flame config",
+            '"orbs": 9'
+            in (Path(tmp) / "flame-tuned" / FLAME_JSON).read_text(encoding="utf-8"),
+        )
 
         # verify: agrees
         code, verdict = verify(str(Path(tmp) / "flame-src"))
-        check("verify agrees with an independent recomputation",
-              code == OK and verdict["state"] == "VERIFIED", str(verdict))
+        check(
+            "verify agrees with an independent recomputation",
+            code == OK and verdict["state"] == "VERIFIED",
+            str(verdict),
+        )
 
         # verify: a tampered golden is REFUSED -- the control
         flame_path = flame_dir / FLAME_JSON
@@ -1011,9 +1270,11 @@ def selftest() -> Tuple[int, List[str]]:
         tampered["golden"]["state_sha256"] = "0" * 16
         flame_path.write_text(json.dumps(tampered, indent=1), encoding="utf-8")
         code, verdict = verify(str(Path(tmp) / "flame-src"))
-        check("verify REFUSES a golden that does not recompute",
-              code == REFUSED and any("recomputed" in p for p in verdict["problems"]),
-              str(verdict))
+        check(
+            "verify REFUSES a golden that does not recompute",
+            code == REFUSED and any("recomputed" in p for p in verdict["problems"]),
+            str(verdict),
+        )
 
     return (OK if not failures else REFUSED), lines
 
@@ -1031,25 +1292,37 @@ def _parse_overrides(pairs: Sequence[str]) -> Dict[str, Any]:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description="SHARDEX: mirror a game, shatter it into shards, forge a shard into "
-                    "FLAME -- a playable 3D arena generated from that shard.")
+        "FLAME -- a playable 3D arena generated from that shard."
+    )
     parser.add_argument("--mirror", default="", help="L0: the game's root directory")
     parser.add_argument("--shatter", action="store_true", help="L1: cut the mirror up")
     parser.add_argument("--forge", default="", help="L2: a shard directory to forge")
     parser.add_argument("--golden", default="", help="print the golden run for a shard")
-    parser.add_argument("--compose", nargs="+", default=[], metavar="MESH_DIR",
-                        help="L5: two or more forged mesh dirs (or mesh.json paths) -> one "
-                             "arena, its composition hash and its merged mesh digest")
+    parser.add_argument(
+        "--compose",
+        nargs="+",
+        default=[],
+        metavar="MESH_DIR",
+        help="L5: two or more forged mesh dirs (or mesh.json paths) -> one "
+        "arena, its composition hash and its merged mesh digest",
+    )
     parser.add_argument("--verify", default="", help="check a forged FLAME directory")
     parser.add_argument("--doctor", action="store_true")
     parser.add_argument("--selftest", action="store_true")
     parser.add_argument("--out", default="", help="output directory")
-    parser.add_argument("--mirror-file", default="", help="a specific mirror.json (shatter)")
+    parser.add_argument(
+        "--mirror-file", default="", help="a specific mirror.json (shatter)"
+    )
     parser.add_argument("--per-shard", type=int, default=24)
     parser.add_argument("--payload-cap", type=int, default=2 * 1024 * 1024)
     parser.add_argument("--genre", default="arena")
-    parser.add_argument("--tune", action="append", default=[],
-                        help="key=value, repeatable: sim_hz, gravity, speed, jump, arena, "
-                             "orbs, difficulty, seed")
+    parser.add_argument(
+        "--tune",
+        action="append",
+        default=[],
+        help="key=value, repeatable: sim_hz, gravity, speed, jump, arena, "
+        "orbs, difficulty, seed",
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
@@ -1058,7 +1331,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         for line in lines:
             print(line)
         print("")
-        print("SELFTEST %s (%d check(s))" % ("OK" if code == OK else "FAILED", len(lines)))
+        print(
+            "SELFTEST %s (%d check(s))" % ("OK" if code == OK else "FAILED", len(lines))
+        )
         return code
     if args.doctor:
         return doctor()
@@ -1076,29 +1351,52 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return code
         totals = doc["totals"]
         print("MIRRORED %s" % doc["source"])
-        print("  %d files, %d bytes -- %d code, %d asset, %d data"
-              % (totals["files"], totals["bytes"], totals["code"], totals["asset"],
-                 totals["data"]))
+        print(
+            "  %d files, %d bytes -- %d code, %d asset, %d data"
+            % (
+                totals["files"],
+                totals["bytes"],
+                totals["code"],
+                totals["asset"],
+                totals["data"],
+            )
+        )
         not_mirrored = doc["not_mirrored"]
         if not_mirrored["dirs"]:
-            print("  NOT MIRRORED: %d dir(s), %d file(s), %d bytes (%s)"
-                  % (not_mirrored["dirs"], not_mirrored["files"], not_mirrored["bytes"],
-                     ", ".join(p["path"] for p in doc["pruned"][:6])))
+            print(
+                "  NOT MIRRORED: %d dir(s), %d file(s), %d bytes (%s)"
+                % (
+                    not_mirrored["dirs"],
+                    not_mirrored["files"],
+                    not_mirrored["bytes"],
+                    ", ".join(p["path"] for p in doc["pruned"][:6]),
+                )
+            )
         print("  %s" % doc["written"])
         return OK
 
     if args.shatter:
-        code, doc = shatter(args.mirror_file or None, out_dir=args.out or None,
-                            per_shard=args.per_shard, payload_cap=args.payload_cap,
-                            genre=args.genre)
+        code, doc = shatter(
+            args.mirror_file or None,
+            out_dir=args.out or None,
+            per_shard=args.per_shard,
+            payload_cap=args.payload_cap,
+            genre=args.genre,
+        )
         if code != OK:
             print("REFUSED: %s\n  %s" % (doc.get("state"), doc.get("reason")))
             return code
         print("SHATTERED %s from %d group(s)" % (doc["written_to"], doc["groups"]))
         for entry in doc["shards"]:
-            print("  %-22s %2d files %8d bytes  %s"
-                  % (entry["shard"], entry["files"], entry["payload_bytes"],
-                     entry["id"][:46]))
+            print(
+                "  %-22s %2d files %8d bytes  %s"
+                % (
+                    entry["shard"],
+                    entry["files"],
+                    entry["payload_bytes"],
+                    entry["id"][:46],
+                )
+            )
         if doc["refused"]:
             print("  REFUSED (over the low-end ceiling):")
             for entry in doc["refused"]:
@@ -1108,17 +1406,24 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return OK
 
     if args.forge:
-        code, doc = forge(args.forge, args.out or (Path(args.forge).parent / "flame"),
-                          overrides=overrides)
+        code, doc = forge(
+            args.forge,
+            args.out or (Path(args.forge).parent / "flame"),
+            overrides=overrides,
+        )
         if code != OK:
             print("REFUSED: %s\n  %s" % (doc.get("state"), doc.get("reason")))
             return code
         print("FORGED %s" % doc["shard"])
         print("  %s" % doc["out"])
-        print("  golden %s over %d ticks" % (doc["golden"]["state_sha256"],
-                                             doc["golden"]["ticks"]))
-        print("  fidelity: ARENA-FROM-SHARD -- the original game's rules are not "
-              "extracted (SHARDEX.md L4)")
+        print(
+            "  golden %s over %d ticks"
+            % (doc["golden"]["state_sha256"], doc["golden"]["ticks"])
+        )
+        print(
+            "  fidelity: ARENA-FROM-SHARD -- the original game's rules are not "
+            "extracted (SHARDEX.md L4)"
+        )
         return OK
 
     if args.compose:
@@ -1127,7 +1432,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         try:
             from ops import OpError as OpsError, compose as compose_meshes
         except ImportError as exc:
-            print("COULD NOT RUN: ops.py is not importable beside shardex.py (%s)" % exc)
+            print(
+                "COULD NOT RUN: ops.py is not importable beside shardex.py (%s)" % exc
+            )
             return COULD_NOT_RUN
         meshes = []
         sources = []
@@ -1135,8 +1442,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             here = Path(raw)
             mesh_path = here / "mesh.json" if here.is_dir() else here
             if not mesh_path.exists():
-                print("COULD NOT RUN: no mesh at %s (--compose reads a forged mesh.json)"
-                      % mesh_path)
+                print(
+                    "COULD NOT RUN: no mesh at %s (--compose reads a forged mesh.json)"
+                    % mesh_path
+                )
                 return COULD_NOT_RUN
             meshes.append(json.loads(mesh_path.read_text(encoding="utf-8")))
             sources.append(str(mesh_path))
@@ -1147,13 +1456,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return REFUSED
         print("COMPOSED %d meshes into one arena" % len(meshes))
         for lane in result["lanes"]:
-            print("  lane %d  %s  %d neurons, %d synapses  offset %d"
-                  % (lane["lane"], lane["digest"], lane["neurons"], lane["synapses"],
-                     lane["offset"]))
+            print(
+                "  lane %d  %s  %d neurons, %d synapses  offset %d"
+                % (
+                    lane["lane"],
+                    lane["digest"],
+                    lane["neurons"],
+                    lane["synapses"],
+                    lane["offset"],
+                )
+            )
         counts = result["mesh"]["counts"]
-        print("  merged       %d neurons, %d synapses, grid %dx%d"
-              % (counts["neurons"], counts["synapses"], result["mesh"]["grid_w"],
-                 result["mesh"]["grid_h"]))
+        print(
+            "  merged       %d neurons, %d synapses, grid %dx%d"
+            % (
+                counts["neurons"],
+                counts["synapses"],
+                result["mesh"]["grid_w"],
+                result["mesh"]["grid_h"],
+            )
+        )
         print("  mesh digest  %s" % result["mesh_digest"])
         print("  composition  %s" % result["composition_hash"])
         if args.out:
@@ -1161,9 +1483,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             target.mkdir(parents=True, exist_ok=True)
             merged_path = target / "mesh.json"
             merged_path.write_text(json.dumps(result["mesh"]), encoding="utf-8")
-            (target / "composition.json").write_text(json.dumps(
-                {k: v for k, v in result.items() if k != "mesh"}, indent=2),
-                encoding="utf-8")
+            (target / "composition.json").write_text(
+                json.dumps({k: v for k, v in result.items() if k != "mesh"}, indent=2),
+                encoding="utf-8",
+            )
             print("  written      %s" % merged_path)
         return OK
 

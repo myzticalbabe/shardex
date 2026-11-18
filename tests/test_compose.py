@@ -34,8 +34,8 @@ REFERENCE = REPO / "docs" / "METTHEW" / "reference-shards"
 #: The two reference shards disagree about every rule that is a property of the artifact
 #: (sim_hz, ticks, seed). A composition of the pair therefore has to declare all three;
 #: that is the law working, not an inconvenience to route around.
-SEED_A = 3512582836   # derived from highend_duel's payload
-SEED_B = 245048625    # derived from highend_ladder's payload
+SEED_A = 3512582836  # derived from highend_duel's payload
+SEED_B = 245048625  # derived from highend_ladder's payload
 SHARED = {"sim_hz": 60, "ticks": 600, "seed": SEED_A}
 
 
@@ -62,8 +62,9 @@ def _pair(tmp_path: Path) -> tuple:
 
 def _compose(paths, resolutions=None):
     bracket = launch.create_bracket([Path(p) for p in paths])
-    return launch.compose_bracket(bracket, dict(resolutions if resolutions is not None
-                                                else SHARED))
+    return launch.compose_bracket(
+        bracket, dict(resolutions if resolutions is not None else SHARED)
+    )
 
 
 def _rewrite_manifest_row(shard_dir: Path, name: str) -> None:
@@ -80,8 +81,9 @@ def _rewrite_manifest_row(shard_dir: Path, name: str) -> None:
     manifest.write_text(json.dumps(doc, indent=2), encoding="utf-8")
 
 
-pytestmark = pytest.mark.skipif(not REFERENCE.exists(),
-                                reason="reference shards are not in this clone")
+pytestmark = pytest.mark.skipif(
+    not REFERENCE.exists(), reason="reference shards are not in this clone"
+)
 
 
 def test_the_same_pair_gets_one_name_whichever_order_it_is_given(tmp_path):
@@ -90,25 +92,36 @@ def test_the_same_pair_gets_one_name_whichever_order_it_is_given(tmp_path):
     code_ba, doc_ba = _compose([b, a])
     assert code_ab == launch.OK and code_ba == launch.OK
     assert doc_ab["space"] == doc_ba["space"]
-    assert doc_ab["composed_hash"] == doc_ba["composed_hash"], \
-        "a composed space is a property of the set; argument order is not part of it"
+    assert (
+        doc_ab["composed_hash"] == doc_ba["composed_hash"]
+    ), "a composed space is a property of the set; argument order is not part of it"
 
 
 def test_either_inputs_bytes_move_the_name(tmp_path):
     """Perturb ONE shard, and settle `seed` on the OTHER so the only moving part is bytes."""
     a, b = _pair(tmp_path)
-    _, base_a = _compose([a, b], resolutions={"sim_hz": 60, "ticks": 600, "seed": SEED_B})
+    _, base_a = _compose(
+        [a, b], resolutions={"sim_hz": 60, "ticks": 600, "seed": SEED_B}
+    )
     _rewrite_manifest_row(a, "main.py")
-    _, moved_a = _compose([a, b], resolutions={"sim_hz": 60, "ticks": 600, "seed": SEED_B})
-    assert moved_a["composed_hash"] != base_a["composed_hash"], \
-        "editing shard A's payload left the name unmoved: the hash is not reading bytes"
+    _, moved_a = _compose(
+        [a, b], resolutions={"sim_hz": 60, "ticks": 600, "seed": SEED_B}
+    )
+    assert (
+        moved_a["composed_hash"] != base_a["composed_hash"]
+    ), "editing shard A's payload left the name unmoved: the hash is not reading bytes"
 
     a2, b2 = _pair(tmp_path / "second")
-    _, base_b = _compose([a2, b2], resolutions={"sim_hz": 60, "ticks": 600, "seed": SEED_A})
+    _, base_b = _compose(
+        [a2, b2], resolutions={"sim_hz": 60, "ticks": 600, "seed": SEED_A}
+    )
     _rewrite_manifest_row(b2, "SHARD.md")
-    _, moved_b = _compose([a2, b2], resolutions={"sim_hz": 60, "ticks": 600, "seed": SEED_A})
-    assert moved_b["composed_hash"] != base_b["composed_hash"], \
-        "editing shard B's payload left the name unmoved"
+    _, moved_b = _compose(
+        [a2, b2], resolutions={"sim_hz": 60, "ticks": 600, "seed": SEED_A}
+    )
+    assert (
+        moved_b["composed_hash"] != base_b["composed_hash"]
+    ), "editing shard B's payload left the name unmoved"
 
 
 def test_the_same_inputs_reproduce_the_same_name(tmp_path):
@@ -169,7 +182,9 @@ def test_a_shardscript_that_exists_and_cannot_be_read_is_refused(tmp_path):
     """
     bare = tmp_path / "bare"
     bare.mkdir()
-    assert launch._shard_op_chain(bare) == "", "no shardscript is still a legitimate empty chain"
+    assert (
+        launch._shard_op_chain(bare) == ""
+    ), "no shardscript is still a legitimate empty chain"
 
     (bare / "shardscript.json").write_text("{not json", encoding="utf-8")
     with pytest.raises(ValueError) as corrupt:
@@ -178,7 +193,8 @@ def test_a_shardscript_that_exists_and_cannot_be_read_is_refused(tmp_path):
 
     # Parses, but carries no chain: still malformed, not an empty program.
     (bare / "shardscript.json").write_text(
-        json.dumps({"shape": "shardex-shardscript-v1"}), encoding="utf-8")
+        json.dumps({"shape": "shardex-shardscript-v1"}), encoding="utf-8"
+    )
     with pytest.raises(ValueError) as chainless:
         launch._shard_op_chain(bare)
     assert "carries no chain" in str(chainless.value)

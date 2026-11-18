@@ -16,6 +16,7 @@ The finding these tests encode, measured 2026-11-02:
     hash is a function of *which orb was touched* and nothing else: `gravity`
     does not move it at all.
 """
+
 from __future__ import annotations
 
 import json
@@ -52,8 +53,9 @@ SHARD_DIR = _first_dir(
     _REPO / "docs/METTHEW/reference-shards/highend_duel",
     _MONO / "docs/METTHEW/reference-shards/highend_duel",
 )
-THIRD_IMPL = _first_file(_REPO / "third_impl.py",
-                         _REPO / "Project_SHARDEX/third_impl.py")
+THIRD_IMPL = _first_file(
+    _REPO / "third_impl.py", _REPO / "Project_SHARDEX/third_impl.py"
+)
 sys.path.insert(0, str((THIRD_IMPL or _REPO).parent))
 
 # The reference shard these five tests replay was never published with the
@@ -62,7 +64,7 @@ sys.path.insert(0, str((THIRD_IMPL or _REPO).parent))
 requires_reference_shard = pytest.mark.skipif(
     SHARD_DIR is None,
     reason="the reference shard under docs/METTHEW/reference-shards/ is not "
-           "published in this repository",
+    "published in this repository",
 )
 
 import third_impl  # noqa: E402  (path set up above)
@@ -73,9 +75,16 @@ CLONE_GOLDEN = "1f046312729509fc"
 
 #: The number the briefs and SHARDEX.md quote, and the config that produces it.
 DOCUMENTED_GOLDEN = "1c045e596f950543"
-TOURNAMENT_SURFACE = {"sim_hz": 60, "gravity": 18.0, "speed": 6.0, "jump": 7.0,
-                      "arena": 8.07, "orbs": 3, "difficulty": 1.12,
-                      "seed": 4220286397}
+TOURNAMENT_SURFACE = {
+    "sim_hz": 60,
+    "gravity": 18.0,
+    "speed": 6.0,
+    "jump": 7.0,
+    "arena": 8.07,
+    "orbs": 3,
+    "difficulty": 1.12,
+    "seed": 4220286397,
+}
 
 
 def _manifest():
@@ -85,8 +94,13 @@ def _manifest():
 def test_third_impl_never_imports_the_existing_implementation():
     """The whole point: a port that reads the original proves nothing."""
     source = Path(third_impl.__file__).read_text(encoding="utf-8")
-    for forbidden in ("import shardex", "from shardex", "flame.html",
-                      "__FLAME_JSON__", "meshscene"):
+    for forbidden in (
+        "import shardex",
+        "from shardex",
+        "flame.html",
+        "__FLAME_JSON__",
+        "meshscene",
+    ):
         assert forbidden not in source, f"third_impl reaches for {forbidden!r}"
     assert not hasattr(third_impl, "shardex")
 
@@ -142,6 +156,9 @@ def test_the_golden_hash_does_not_depend_on_gravity():
 def test_the_command_line_reports_the_same_golden():
     completed = subprocess.run(
         [sys.executable, str(THIRD_IMPL), str(SHARD_DIR)],
-        capture_output=True, text=True, timeout=120)
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert CLONE_GOLDEN in completed.stdout

@@ -44,15 +44,44 @@ from pathlib import Path
 VERSION = "1.1.0"
 
 EXCLUDED_DIRS = {
-    ".git", ".hg", ".svn", "node_modules", "__pycache__", ".mypy_cache",
-    ".pytest_cache", ".tox", "venv", ".venv", "env", ".venv-314t",
-    "build", "dist", "site-packages", ".egg-info", "skills.pkg-archive",
-    "archived", "_archive",
+    ".git",
+    ".hg",
+    ".svn",
+    "node_modules",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".tox",
+    "venv",
+    ".venv",
+    "env",
+    ".venv-314t",
+    "build",
+    "dist",
+    "site-packages",
+    ".egg-info",
+    "skills.pkg-archive",
+    "archived",
+    "_archive",
 }
 
 MAX_FILE_BYTES = 3_000_000
-VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input",
-        "link", "meta", "param", "source", "track", "wbr"}
+VOID = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
+}
 CONTROLS = {"input", "select", "textarea"}
 HEADINGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 SEVERITY_RANK = {"low": 1, "medium": 2, "high": 3}
@@ -64,11 +93,11 @@ class PageScan(HTMLParser):
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
-        self.tags = []            # (tag, attrs_dict, line)
+        self.tags = []  # (tag, attrs_dict, line)
         self.label_for = set()
-        self._capture = None      # [tag, attrs_dict, pile of text]
+        self._capture = None  # [tag, attrs_dict, pile of text]
         self._depth = 0
-        self.pending = []         # (tag, attrs_dict, joined text, line)
+        self.pending = []  # (tag, attrs_dict, joined text, line)
 
     def handle_starttag(self, tag, attrs):
         attr = {k.lower(): (v if v is not None else "") for k, v in attrs}
@@ -93,7 +122,8 @@ class PageScan(HTMLParser):
             if self._depth <= 0:
                 joined = " ".join("".join(self._capture[2]).split())
                 self.pending.append(
-                    (self._capture[0], self._capture[1], joined, self._capture[3]))
+                    (self._capture[0], self._capture[1], joined, self._capture[3])
+                )
                 self._capture = None
         elif tag not in VOID:
             self._depth -= 1
@@ -113,8 +143,16 @@ def scan_file(path: Path, root: Path, use_axe: bool):
     findings = []
 
     def add(severity, rule, line, match, why):
-        findings.append({"file": rel, "line": line, "severity": severity,
-                         "rule": rule, "match": match, "why": why})
+        findings.append(
+            {
+                "file": rel,
+                "line": line,
+                "severity": severity,
+                "rule": rule,
+                "match": match,
+                "why": why,
+            }
+        )
 
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -126,8 +164,13 @@ def scan_file(path: Path, root: Path, use_axe: bool):
         scanner.feed(text)
         scanner.close()
     except Exception as exc:  # a parser that dies must not read as clean
-        add("high", "unparseable", 1, "<html>",
-            f"html.parser raised {type(exc).__name__}: {exc}")
+        add(
+            "high",
+            "unparseable",
+            1,
+            "<html>",
+            f"html.parser raised {type(exc).__name__}: {exc}",
+        )
         return findings
 
     label_targets = scanner.label_for | {
@@ -139,44 +182,79 @@ def scan_file(path: Path, root: Path, use_axe: bool):
     heading_levels = []
     for tag, attr, line in scanner.tags:
         if tag == "img" and "alt" not in attr:
-            add("high", "img-alt", line, "<img>",
-                "no alt attribute; use alt=\"\" if the image is decorative")
+            add(
+                "high",
+                "img-alt",
+                line,
+                "<img>",
+                'no alt attribute; use alt="" if the image is decorative',
+            )
         if tag in CONTROLS:
             kind = attr.get("type", "text").lower()
             if kind in ("hidden", "submit", "reset", "button", "image"):
                 continue
             if not has_name(attr, label_targets):
-                add("high", "control-name", line, f"<{tag}>",
+                add(
+                    "high",
+                    "control-name",
+                    line,
+                    f"<{tag}>",
                     "no accessible name from label[for], aria-label, "
-                    "aria-labelledby or title")
+                    "aria-labelledby or title",
+                )
         if tag == "html" and not attr.get("lang", "").strip():
-            add("medium", "html-lang", line, "<html>",
-                "a screen reader picks its pronunciation from lang=")
+            add(
+                "medium",
+                "html-lang",
+                line,
+                "<html>",
+                "a screen reader picks its pronunciation from lang=",
+            )
         if tag in HEADINGS:
             heading_levels.append((int(tag[1]), line))
         if tag in ("a", "button"):
             tabindex = attr.get("tabindex", "").strip()
             if tabindex.lstrip("+").isdigit() and int(tabindex) > 0:
-                add("medium", "tabindex-positive", line, f"<{tag}>",
-                    "a positive tabindex reorders keyboard focus for everyone")
+                add(
+                    "medium",
+                    "tabindex-positive",
+                    line,
+                    f"<{tag}>",
+                    "a positive tabindex reorders keyboard focus for everyone",
+                )
 
     if not any(tag == "title" for tag, _, _ in scanner.tags):
-        add("medium", "missing-title", 1, "<title>",
-            "a document with no title is announced as its URL")
+        add(
+            "medium",
+            "missing-title",
+            1,
+            "<title>",
+            "a document with no title is announced as its URL",
+        )
 
     for tag, attr, content, line in scanner.pending:
         if content.strip():
             continue
         if has_name(attr, label_targets):
             continue
-        add("medium", "empty-control", line, f"<{tag}>",
-            "link or button with no text and no aria-label")
+        add(
+            "medium",
+            "empty-control",
+            line,
+            f"<{tag}>",
+            "link or button with no text and no aria-label",
+        )
 
     previous = None
     for level, line in heading_levels:
         if previous is not None and level > previous + 1:
-            add("low", "heading-skip", line, f"<h{level}>",
-                f"heading level jumps from h{previous} to h{level}")
+            add(
+                "low",
+                "heading-skip",
+                line,
+                f"<h{level}>",
+                f"heading level jumps from h{previous} to h{level}",
+            )
         previous = level
     if sum(1 for level, _ in heading_levels if level == 1) > 1:
         add("low", "multiple-h1", 1, "<h1>", "more than one h1 on the page")
@@ -191,49 +269,84 @@ def run_axe(path: Path, rel: str):
     try:
         from playwright.sync_api import sync_playwright  # noqa: F401
     except Exception:
-        return [{"file": rel, "line": 1, "severity": "low", "rule": "axe-skipped",
-                 "match": "axe",
-                 "why": "playwright not installed; axe not run (recorded, not passed)"}]
+        return [
+            {
+                "file": rel,
+                "line": 1,
+                "severity": "low",
+                "rule": "axe-skipped",
+                "match": "axe",
+                "why": "playwright not installed; axe not run (recorded, not passed)",
+            }
+        ]
     try:
         from playwright.sync_api import sync_playwright
+
         with sync_playwright() as play:
             browser = play.chromium.launch()
             page = browser.new_page()
             page.goto(path.resolve().as_uri())
             page.add_script_tag(
-                url="https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js")
+                url="https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js"
+            )
             violations = page.evaluate(
                 "() => axe.run().then(r => r.violations.map(v => "
-                "({id: v.id, impact: v.impact, help: v.help})))")
+                "({id: v.id, impact: v.impact, help: v.help})))"
+            )
             browser.close()
     except Exception as exc:
-        return [{"file": rel, "line": 1, "severity": "low", "rule": "axe-skipped",
-                 "match": "axe",
-                 "why": f"axe could not run: {type(exc).__name__} (recorded, not passed)"}]
+        return [
+            {
+                "file": rel,
+                "line": 1,
+                "severity": "low",
+                "rule": "axe-skipped",
+                "match": "axe",
+                "why": f"axe could not run: {type(exc).__name__} (recorded, not passed)",
+            }
+        ]
 
     out = []
     for violation in violations or []:
         impact = (violation.get("impact") or "minor").lower()
-        severity = {"critical": "high", "serious": "high",
-                    "moderate": "medium", "minor": "low"}.get(impact, "low")
-        out.append({"file": rel, "line": 1, "severity": severity,
-                    "rule": f"axe:{violation.get('id')}",
-                    "match": violation.get("id", ""),
-                    "why": violation.get("help", "")})
+        severity = {
+            "critical": "high",
+            "serious": "high",
+            "moderate": "medium",
+            "minor": "low",
+        }.get(impact, "low")
+        out.append(
+            {
+                "file": rel,
+                "line": 1,
+                "severity": severity,
+                "rule": f"axe:{violation.get('id')}",
+                "match": violation.get("id", ""),
+                "why": violation.get("help", ""),
+            }
+        )
     return out
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="Accessibility audit: static HTML rules, optional axe.")
+        description="Accessibility audit: static HTML rules, optional axe."
+    )
     parser.add_argument("--path", default=".", help="tree to audit")
-    parser.add_argument("--fail-on", default="high",
-                        choices=["high", "medium", "low", "never"],
-                        help="lowest severity that fails the run (default: high)")
-    parser.add_argument("--axe", action="store_true",
-                        help="also run axe-core via playwright when available")
-    parser.add_argument("--json", dest="json_path", default=None,
-                        help="write the full report here")
+    parser.add_argument(
+        "--fail-on",
+        default="high",
+        choices=["high", "medium", "low", "never"],
+        help="lowest severity that fails the run (default: high)",
+    )
+    parser.add_argument(
+        "--axe",
+        action="store_true",
+        help="also run axe-core via playwright when available",
+    )
+    parser.add_argument(
+        "--json", dest="json_path", default=None, help="write the full report here"
+    )
     parser.add_argument("--quiet", action="store_true", help="counts only")
     args = parser.parse_args(argv)
 
@@ -244,8 +357,11 @@ def main(argv=None):
 
     pages, skipped = [], 0
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames
-                       if d.lower() not in EXCLUDED_DIRS and not d.startswith(".")]
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if d.lower() not in EXCLUDED_DIRS and not d.startswith(".")
+        ]
         for name in filenames:
             path = Path(dirpath) / name
             if path.suffix.lower() not in {".html", ".htm"}:
@@ -272,30 +388,44 @@ def main(argv=None):
         axe_state = next(f["why"] for f in findings if f["rule"] == "axe-skipped")
 
     if not args.quiet:
-        for f in sorted(findings, key=lambda x: (-SEVERITY_RANK[x["severity"]],
-                                                 x["file"], x["line"])):
-            print(f"{f['severity']:6s} {f['file']}:{f['line']}  "
-                  f"[{f['rule']}] {f['why']}")
+        for f in sorted(
+            findings,
+            key=lambda x: (-SEVERITY_RANK[x["severity"]], x["file"], x["line"]),
+        ):
+            print(
+                f"{f['severity']:6s} {f['file']}:{f['line']}  "
+                f"[{f['rule']}] {f['why']}"
+            )
 
-    print(f"audit_accessibility {VERSION}: scanned {len(pages)} HTML file(s) "
-          f"under {root} ({skipped} non-HTML file(s) skipped)")
+    print(
+        f"audit_accessibility {VERSION}: scanned {len(pages)} HTML file(s) "
+        f"under {root} ({skipped} non-HTML file(s) skipped)"
+    )
     print(f"  axe: {axe_state}")
-    print(f"  findings: high={counts['high']} medium={counts['medium']} "
-          f"low={counts['low']}  (total {len(findings)})")
+    print(
+        f"  findings: high={counts['high']} medium={counts['medium']} "
+        f"low={counts['low']}  (total {len(findings)})"
+    )
     print(f"  fail-on={args.fail_on}")
 
     if args.json_path:
-        Path(args.json_path).write_text(json.dumps({
-            "tool": "audit_accessibility",
-            "version": VERSION,
-            "root": str(root),
-            "html_files_scanned": len(pages),
-            "non_html_skipped": skipped,
-            "axe": axe_state,
-            "counts": counts,
-            "fail_on": args.fail_on,
-            "findings": findings,
-        }, indent=2), encoding="utf-8")
+        Path(args.json_path).write_text(
+            json.dumps(
+                {
+                    "tool": "audit_accessibility",
+                    "version": VERSION,
+                    "root": str(root),
+                    "html_files_scanned": len(pages),
+                    "non_html_skipped": skipped,
+                    "axe": axe_state,
+                    "counts": counts,
+                    "fail_on": args.fail_on,
+                    "findings": findings,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
     threshold = FAIL_ON_RANK[args.fail_on]
     failing = [f for f in findings if SEVERITY_RANK[f["severity"]] >= threshold]

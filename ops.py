@@ -49,6 +49,7 @@ The op-log is append-only and hash-chained: op N's id includes op N-1's id, so r
 reordering or editing any op breaks every id after it. `chain_hash` is what the golden run
 hashes, not the final picture.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -61,11 +62,20 @@ from typing import Any, Dict, List, Sequence, Tuple
 # the digest unit test imports this module on its own; make the shared FNV reachable
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-Q = 1000          # positions and weights are quantised to 1e-3 in the digest
+Q = 1000  # positions and weights are quantised to 1e-3 in the digest
 SINE_ENTRIES = 256
 
-OP_KINDS = ("warp", "sprout", "prune", "palette", "extrude", "touch",
-            "ripple", "attract", "twist")
+OP_KINDS = (
+    "warp",
+    "sprout",
+    "prune",
+    "palette",
+    "extrude",
+    "touch",
+    "ripple",
+    "attract",
+    "twist",
+)
 
 #: fields each op must carry, and nothing else is required -- an op with an unknown key is
 #: refused rather than ignored, because an ignored parameter is a mutation that silently did
@@ -77,12 +87,25 @@ OP_SCHEMA = {
     "palette": {"shift": (int,)},
     "extrude": {"gain": (int, float)},
     "touch": {"neuron": (int,), "radius": (int, float), "gain": (int, float)},
-    "ripple": {"cx": (int, float), "cy": (int, float), "amp": (int, float),
-               "freq": (int, float), "decay": (int, float)},
-    "attract": {"cx": (int, float), "cy": (int, float), "strength": (int, float),
-                "radius": (int, float)},
-    "twist": {"cx": (int, float), "cy": (int, float), "angle": (int, float),
-              "radius": (int, float)},
+    "ripple": {
+        "cx": (int, float),
+        "cy": (int, float),
+        "amp": (int, float),
+        "freq": (int, float),
+        "decay": (int, float),
+    },
+    "attract": {
+        "cx": (int, float),
+        "cy": (int, float),
+        "strength": (int, float),
+        "radius": (int, float),
+    },
+    "twist": {
+        "cx": (int, float),
+        "cy": (int, float),
+        "angle": (int, float),
+        "radius": (int, float),
+    },
 }
 
 
@@ -93,8 +116,11 @@ class OpError(Exception):
 def sine_table() -> List[int]:
     """Q15 sine, 256 entries, one full turn. Both languages read this, neither computes it."""
     import math
-    return [int(round(math.sin(i * 2.0 * math.pi / SINE_ENTRIES) * 32767)) for i in
-            range(SINE_ENTRIES)]
+
+    return [
+        int(round(math.sin(i * 2.0 * math.pi / SINE_ENTRIES) * 32767))
+        for i in range(SINE_ENTRIES)
+    ]
 
 
 def lcg(seed: int, count: int) -> List[int]:
@@ -114,20 +140,26 @@ def validate(op: Dict[str, Any]) -> Dict[str, Any]:
     schema = OP_SCHEMA[kind]
     extra = set(op) - set(schema) - {"kind", "seed", "note"}
     if extra:
-        raise OpError("%s carries unknown field(s) %s -- refuse rather than ignore"
-                      % (kind, ", ".join(sorted(extra))))
+        raise OpError(
+            "%s carries unknown field(s) %s -- refuse rather than ignore"
+            % (kind, ", ".join(sorted(extra)))
+        )
     missing = [key for key in schema if key not in op]
     if missing:
         raise OpError("%s is missing %s" % (kind, ", ".join(missing)))
     for key, types in schema.items():
         if not isinstance(op[key], types) or isinstance(op[key], bool):
-            raise OpError("%s.%s must be %s, got %r"
-                          % (kind, key, "/".join(t.__name__ for t in types), op[key]))
+            raise OpError(
+                "%s.%s must be %s, got %r"
+                % (kind, key, "/".join(t.__name__ for t in types), op[key])
+            )
     return op
 
 
 def op_id(op: Dict[str, Any], previous: str = "") -> str:
-    payload = json.dumps({"op": op, "prev": previous}, sort_keys=True, separators=(",", ":"))
+    payload = json.dumps(
+        {"op": op, "prev": previous}, sort_keys=True, separators=(",", ":")
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:32]
 
 
@@ -142,6 +174,7 @@ def chain_hash(ops: Sequence[Dict[str, Any]]) -> str:
 # the mesh
 # --------------------------------------------------------------------------- #
 
+
 def mesh_stream(mesh: Dict[str, Any]) -> str:
     """Canonical, quantised, index-ordered. Mirrored by meshStream() in the scene.
 
@@ -151,8 +184,17 @@ def mesh_stream(mesh: Dict[str, Any]) -> str:
     """
     parts: List[str] = []
     for node in mesh["neurons"]:
-        parts.append("%d,%d,%d,%d,%d,%d" % (_q(node[0]), _q(node[1]), _q(node[2]),
-                                            int(node[3]), int(node[4]), _q(node[5])))
+        parts.append(
+            "%d,%d,%d,%d,%d,%d"
+            % (
+                _q(node[0]),
+                _q(node[1]),
+                _q(node[2]),
+                int(node[3]),
+                int(node[4]),
+                _q(node[5]),
+            )
+        )
     body = ";".join(parts)
     links: List[str] = []
     for edge in mesh["synapses"]:
@@ -169,6 +211,7 @@ def mesh_digest(mesh: Dict[str, Any]) -> str:
     browser, and there is no synchronous sha256 in a page. The same lane scheme is already
     used by transubstantiate.py, so one implementation serves both."""
     from transubstantiate import _fnv as fnv64
+
     return fnv64(mesh_stream(mesh))
 
 
@@ -176,13 +219,16 @@ def mesh_digest(mesh: Dict[str, Any]) -> str:
 # operators -- each a pure function of (mesh, op)
 # --------------------------------------------------------------------------- #
 
+
 def _sine(table: Sequence[int], turn: float) -> float:
     """turn in [0,1) -> Q15 integer, nearest entry. Integer indexing, no libm."""
     index = int(turn * SINE_ENTRIES) % SINE_ENTRIES
     return table[index] / 32767.0
 
 
-def apply_op(mesh: Dict[str, Any], op: Dict[str, Any], table: Sequence[int]) -> Dict[str, Any]:
+def apply_op(
+    mesh: Dict[str, Any], op: Dict[str, Any], table: Sequence[int]
+) -> Dict[str, Any]:
     validate(op)
     kind = op["kind"]
     neurons = [list(node) for node in mesh["neurons"]]
@@ -196,10 +242,12 @@ def apply_op(mesh: Dict[str, Any], op: Dict[str, Any], table: Sequence[int]) -> 
         phase = int(op["phase"]) % SINE_ENTRIES
         for node in neurons:
             # two table reads per node, mapped from position to a 0..255 index
-            iy = (int(node[1] / max(height, 1.0) * SINE_ENTRIES * max(freq, 0.01)) + phase) \
-                % SINE_ENTRIES
-            ix = (int(node[0] / max(width, 1.0) * SINE_ENTRIES * max(freq, 0.01)) + phase) \
-                % SINE_ENTRIES
+            iy = (
+                int(node[1] / max(height, 1.0) * SINE_ENTRIES * max(freq, 0.01)) + phase
+            ) % SINE_ENTRIES
+            ix = (
+                int(node[0] / max(width, 1.0) * SINE_ENTRIES * max(freq, 0.01)) + phase
+            ) % SINE_ENTRIES
             node[0] = node[0] + amp * (table[iy] / 32767.0)
             node[1] = node[1] + amp * (table[ix] / 32767.0)
         return _pack(mesh, neurons, synapses)
@@ -252,8 +300,10 @@ def apply_op(mesh: Dict[str, Any], op: Dict[str, Any], table: Sequence[int]) -> 
         # click. Everything after this line is arithmetic both languages can reproduce.
         index = int(op["neuron"])
         if not 0 <= index < len(neurons):
-            raise OpError("touch.neuron %d is not in this mesh (0..%d)"
-                          % (index, len(neurons) - 1))
+            raise OpError(
+                "touch.neuron %d is not in this mesh (0..%d)"
+                % (index, len(neurons) - 1)
+            )
         radius = float(op["radius"])
         if not radius > 0:
             raise OpError("touch.radius must be > 0, got %r" % (op["radius"],))
@@ -318,6 +368,7 @@ def apply_op(mesh: Dict[str, Any], op: Dict[str, Any], table: Sequence[int]) -> 
         radius = float(op["radius"])
         r2 = radius * radius
         import math as _math
+
         cos_a = _math.cos(angle)
         sin_a = _math.sin(angle)
         for node in neurons:
@@ -334,11 +385,12 @@ def apply_op(mesh: Dict[str, Any], op: Dict[str, Any], table: Sequence[int]) -> 
             node[1] = new_y
         return _pack(mesh, neurons, synapses)
 
-    raise OpError("unhandled op %r" % kind)          # unreachable: validate() ran first
+    raise OpError("unhandled op %r" % kind)  # unreachable: validate() ran first
 
 
-def _pack(mesh: Dict[str, Any], neurons: List[List[float]],
-          synapses: List[List[float]]) -> Dict[str, Any]:
+def _pack(
+    mesh: Dict[str, Any], neurons: List[List[float]], synapses: List[List[float]]
+) -> Dict[str, Any]:
     out = dict(mesh)
     out["neurons"] = neurons
     out["synapses"] = synapses
@@ -348,6 +400,7 @@ def _pack(mesh: Dict[str, Any], neurons: List[List[float]],
 # --------------------------------------------------------------------------- #
 # composition -- two meshes, one space
 # --------------------------------------------------------------------------- #
+
 
 def compose(meshes: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
     """Merge 2+ meshes into one arena, deterministically, and name the result.
@@ -377,8 +430,10 @@ def compose(meshes: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
     digests = [digest for digest, _ in rows]
     if len(set(digests)) != len(digests):
         dupes = sorted({d for d in digests if digests.count(d) > 1})
-        raise OpError("duplicate mesh digest %s: two copies of one mesh are not a "
-                      "composition" % ", ".join(dupes))
+        raise OpError(
+            "duplicate mesh digest %s: two copies of one mesh are not a "
+            "composition" % ", ".join(dupes)
+        )
 
     lane_w = max(int(mesh.get("grid_w") or 96) for _, mesh in rows)
     height = max(int(mesh.get("grid_h") or 54) for _, mesh in rows)
@@ -390,27 +445,53 @@ def compose(meshes: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
         first = len(neurons)
         offset = lane * lane_w
         for node in mesh["neurons"]:
-            neurons.append([float(node[0]) + offset, float(node[1]), float(node[2]),
-                            int(node[3]), int(node[4]), float(node[5])])
+            neurons.append(
+                [
+                    float(node[0]) + offset,
+                    float(node[1]),
+                    float(node[2]),
+                    int(node[3]),
+                    int(node[4]),
+                    float(node[5]),
+                ]
+            )
         for edge in mesh["synapses"]:
-            synapses.append([int(edge[0]) + first, int(edge[1]) + first, float(edge[2])])
-        lanes.append({"lane": lane, "digest": digest, "neurons": len(mesh["neurons"]),
-                      "synapses": len(mesh["synapses"]), "offset": offset})
+            synapses.append(
+                [int(edge[0]) + first, int(edge[1]) + first, float(edge[2])]
+            )
+        lanes.append(
+            {
+                "lane": lane,
+                "digest": digest,
+                "neurons": len(mesh["neurons"]),
+                "synapses": len(mesh["synapses"]),
+                "offset": offset,
+            }
+        )
 
-    merged = {"shape": rows[0][1].get("shape") or "shardex-mesh-v1",
-              "grid_w": lane_w * len(rows), "grid_h": height, "step": step,
-              "neurons": neurons, "synapses": synapses,
-              "counts": {"neurons": len(neurons), "synapses": len(synapses)}}
-    return {"mesh": merged,
-            "mesh_digest": mesh_digest(merged),
-            "composition_hash": hashlib.sha256(
-                "\n".join(digests).encode("utf-8")).hexdigest()[:16],
-            "inputs": [{"digest": digest} for digest in digests],
-            "lanes": lanes}
+    merged = {
+        "shape": rows[0][1].get("shape") or "shardex-mesh-v1",
+        "grid_w": lane_w * len(rows),
+        "grid_h": height,
+        "step": step,
+        "neurons": neurons,
+        "synapses": synapses,
+        "counts": {"neurons": len(neurons), "synapses": len(synapses)},
+    }
+    return {
+        "mesh": merged,
+        "mesh_digest": mesh_digest(merged),
+        "composition_hash": hashlib.sha256(
+            "\n".join(digests).encode("utf-8")
+        ).hexdigest()[:16],
+        "inputs": [{"digest": digest} for digest in digests],
+        "lanes": lanes,
+    }
 
 
-def replay(mesh: Dict[str, Any], ops: Sequence[Dict[str, Any]],
-           table: Sequence[int]) -> Tuple[Dict[str, Any], List[str]]:
+def replay(
+    mesh: Dict[str, Any], ops: Sequence[Dict[str, Any]], table: Sequence[int]
+) -> Tuple[Dict[str, Any], List[str]]:
     """Apply ops in order, returning the final mesh and the digest after each op."""
     current = mesh
     digests: List[str] = []
