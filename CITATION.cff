@@ -1,32 +1,31 @@
 cff-version: 1.2.0
-message: "If you use this software, cite it as below. If you cite a measured figure, cite the commit and the split it came from."
-title: "Project SHARDEX: Mirror a codebase, shatter it into content-addressed shards, forge a shard into a FLAME arena."
-version: 0.1.0
-date-released: "2026-11-01"
-license: CDDL-1.1
-type: software
-abstract: >-
-  SHARDEX mirrors a codebase, shatters it into content-addressed shards,
-  and forges a shard into a FLAME arena. The pipeline runs on the Python
-  standard library: mirror, shatter, forge, tune, and verify rungs
-  (`shardex.py`, `ops.py`, `meshscene.py`, `transubstantiate.py`) with the
-  forged `flame.html` shell running on the browser's own JavaScript with no
-  external script, font, or stylesheet reference.
+message: "If you use this software, please cite it as below."
 authors:
-  - name: "Project SHARDEX contributors"
+  - family-names: "Azazael"
+    given-names: "Contributors"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+title: "Shardex: Shard Execution Engine"
+version: 0.1.0
+doi: "10.5281/zenodo.XXXXXXX"
+date-released: 2026-11-18
+url: "https://github.com/myzticalbabe/shardex"
+preferred-citation:
+  type: "software"
+  authors:
+    - family-names: "Azazael"
+      given-names: "Contributors"
+  title: "Shardex: Shard Execution Engine"
+  year: 2026
+  version: "0.1.0"
+  doi: "10.5281/zenodo.XXXXXXX"
+  url: "https://github.com/myzticalbabe/shardex"
 keywords:
-  - code mirroring
-  - content-addressed shards
-  - game engine
-  - transubstantiation
-  - FLAME engine
-  - open source
-references:
-  - type: software
-    title: "Project FLAME"
-    notes: "Target engine for forged shards."
-    url: "https://github.com/myzticalbabe/azazael/tree/main/Project_FLAME"
-  - type: software
-    title: "Project FLAMING SWORD"
-    notes: "Code quality sweep used in the pipeline."
-    url: "https://github.com/myzticalbabe/azazael/tree/main/Project_FLAMING_SWORD"
+  - "shard"
+  - "execution"
+  - "engine"
+  - "parallel"
+  - "python"
+license: "CDDL-1.1"
+repository: "https://github.com/myzticalbabe/shardex"
+repository-code: "https://github.com/myzticalbabe/shardex"
+repository-artifact: "https://pypi.org/project/shardex/"

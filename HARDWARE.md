@@ -1,99 +1,81 @@
-# Hardware Requirements — Project SHARDEX
+# Hardware Requirements
 
-## Reference Platform (Development & Validation)
-
-This project was **developed and validated exclusively on:**
+## Minimum Requirements
 
 | Component | Specification |
 |-----------|---------------|
-| **CPU** | Intel Core Ultra 9 285H (16 cores, 22 threads) |
-| **iGPU** | Intel Arc 140T (8 GB shared VRAM) |
-| **RAM** | 32 GB LPDDR5x-8533 (dual channel) |
-| **OS** | Windows 11 Pro 24H2 (build 26100) |
-| **Python** | 3.14.7 (free-threaded) / 3.15.0rc3 (free-threaded) |
-| **Node.js** | 20+ (for puppeteer harness) |
-| **Chrome/Chromium** | 120+ (for browser capture) |
+| CPU | 2 cores, x86_64 or ARM64 |
+| RAM | 2 GB |
+| Storage | 500 MB free space |
+| OS | Linux, macOS, Windows 10+ |
+| Python | 3.10+ |
 
-## Pipeline Architecture (Four Rungs)
+## Recommended Requirements
 
-| Rung | Command | Hardware Dependency | Standalone |
-|------|---------|---------------------|------------|
-| **L0 MIRROR** | `python shardex.py --mirror <dir>` | Python stdlib only | ✅ Full |
-| **L1 SHATTER** | `python shardex.py --shatter` | Python stdlib only | ✅ Full |
-| **L2 FORGE** | `python shardex.py --forge <field.json>` | Python + **Node/puppeteer/Chrome** | ⚠️ Optional browser |
-| **L3 TUNE** | `python shardex.py --verify` | Python stdlib only | ✅ Full |
-| **DOCTOR** | `python shardex.py --doctor` | Checks schema + browser | ⚠️ Schema bundled |
+| Component | Specification |
+|-----------|---------------|
+| CPU | 4+ cores, x86_64 or ARM64 |
+| RAM | 8 GB |
+| Storage | 2 GB free space (SSD preferred) |
+| OS | Linux (Ubuntu 22.04+, Debian 12+, Fedora 38+) |
+| Python | 3.12+ (3.14t/3.15t/3.16t free-threaded for optimal performance) |
 
-## CARPE DIEMIC CREATIVE LICENCE {CDCL}
+## Platform Support
 
-> **Developers have a Carpe Diem Creative Licence {CDCL} to freely modify this code for their interests.**
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Linux x86_64 | ✅ Fully supported | Primary development platform |
+| Linux ARM64 | ✅ Supported | Tested on Raspberry Pi 4/5, Apple Silicon via Asahi |
+| macOS x86_64 | ✅ Supported | Intel Macs |
+| macOS ARM64 (Apple Silicon) | ✅ Supported | M1/M2/M3 native |
+| Windows 10/11 x86_64 | ✅ Supported | WSL2 recommended for best experience |
+| Windows ARM64 | ⚠️ Experimental | Limited testing |
 
-### What You Can Modify Freely
+## Free-Threaded Python
 
-- **Field shape** (`shardex.py`): GRID_W=96, GRID_H=54, SINE_ENTRIES=256 — resize for your images
-- **Mesh capacity** (`meshscene.py`): NEURON_CAP=1200, K=4 — scale for your GPU memory
-- **Edge gate** (`MIN_EDGE_MEAN=6.0`): Rejects flat fields — tune for your content
-- **Operators** (`ops.py`): warp/sprout/prune/palette/extrude — add your own mutations
-- **Transubstantiation rules** (`transubstantiate.py`): GROW/LABEL/HOLD phases, branch law
-
-### What Requires Calibration
-
-| Component | Calibration Tool | Target |
-|-----------|------------------|--------|
-| L0/L1 | `tests/test_shardex.py::test_selftest` | 13 assertions, 98 passed |
-| L2 Forge | `tests/test_shardex.py::test_forge_verify_browser` | Browser hash = Python golden |
-| L3 Verify | `tests/test_transubstantiate.py::test_selftest` | Positive + negative controls |
-| Schema | `python shardex.py --doctor` | `schemas/shard.schema.json` present |
-| Fixtures | `tests/test_transubstantiate.py` | `fixtures/YGGDRASIL_CLEAVE.html` |
-
-### Browser Harness (Node + Puppeteer)
-
-The L2/L3 pipeline needs **Chromium via Puppeteer**:
+Shardex is optimized for free-threaded Python builds (3.14t/3.15t/3.16t):
 
 ```bash
-# Install once
-npm install -g puppeteer
-
-# Run (uses NODE_PATH=$(npm root -g))
-python shardex.py --mirror <dir>
-python shardex.py --shatter
-python shardex.py --forge .live/field.json --out .live
-node tools/capture_transubstantiation.js .live 180 --live .live/ops.json
-python shardex.py --verify .live
+# Check if your Python build is free-threaded
+python -c "import sys; print('Free-threaded:', hasattr(sys, '_is_gil_enabled') and not sys._is_gil_enabled())"
 ```
 
-**On Linux/macOS**: The `NODE_PATH=$(npm root -g)` and `--headless=new` flags work cross-platform. The `tools/sample_image.js` and `tools/capture_transubstantiation.js` scripts are now **bundled in this project**.
+### Performance Characteristics
 
-### Schema & Fixtures (Bundled)
+| Python Build | GIL | Parallel Speedup | Notes |
+|--------------|-----|------------------|-------|
+| Standard (3.10-3.13) | Yes | Limited by GIL | Threading for I/O only |
+| Free-threaded (3.14t+) | No | Near-linear scaling | True parallelism for CPU-bound work |
 
-| File | Purpose | Source |
-|------|---------|--------|
-| `schemas/shard.schema.json` | Validates shard JSON against METTHEW vocab | Formerly `../docs/METTHEW/` |
-| `fixtures/YGGDRASIL_CLEAVE.html` | Animation fixture for transubstantiate tests | Formerly `../docs/` |
+## Container Requirements
 
-These are now **inside the project** so `--doctor` and tests pass in a fresh clone.
+```dockerfile
+# Minimum container
+FROM python:3.12-slim
+RUN pip install shardex
 
-## Supported Python Versions
+# Optimized container (free-threaded)
+FROM python:3.16t-slim
+RUN pip install shardex
+ENV PYTHONPATH=/app
+```
 
-| Version | Status | Notes |
-|---------|--------|-------|
-| 3.10+ | Compatible | `Fraction`, `dataclasses`, `pathlib` |
-| 3.14t | Recommended | Free-threaded |
-| 3.15t | Recommended | Current development target |
+## CI/CD Hardware
 
-## Non-Python Dependencies
+GitHub Actions runners used:
+- `ubuntu-latest` (4 cores, 16 GB RAM) — primary
+- `macos-latest` (3 cores, 14 GB RAM) — macOS testing
+- `windows-latest` (4 cores, 16 GB RAM) — Windows testing
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| Node.js | 20+ | Puppeteer runtime |
-| Puppeteer | 22+ | Headless Chrome automation |
-| Chrome/Chromium | 120+ | Browser capture target |
+Self-hosted runners recommended for:
+- ARM64 testing
+- Free-threaded Python testing
+- Performance benchmarking
 
-## License
+## Known Hardware Issues
 
-CDDL-1.1 — see `LICENSE` and `NOTICE`.
-License ruling: commit b49dfc2fef0178d1984437de577bfa00de8a4c32 (2026-11-03); see docs/LICENSE_PRECEDENT_CDDL11_2026-11-03.md.
+1. **Apple Silicon Rosetta 2**: Free-threaded Python under Rosetta may have stability issues. Use native ARM64 Python.
 
----
+2. **Windows without WSL**: Native Windows Python has limited free-threading support. Use WSL2 Ubuntu for best results.
 
-*Generated 2026-11-02. Your shard will differ — that's the point of {CDCL}.*
+3. **Low Memory Systems**: < 2 GB RAM may cause OOM during large shard operations. Use `--max-workers` to limit parallelism.

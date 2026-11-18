@@ -5,43 +5,36 @@
 | Version | Supported          |
 | ------- | ------------------ |
 | 0.1.x   | :white_check_mark: |
+| < 0.1   | :x:                |
 
 ## Reporting a Vulnerability
 
-**Do not report security vulnerabilities via public GitHub issues.**
+We take security vulnerabilities seriously. If you discover a security vulnerability in Shardex, please report it responsibly:
 
-Instead, please report them via email to **security@azazael.local**.
+1. **Do not** create a public GitHub issue for the vulnerability
+2. Email the details to security@shardex.dev
+3. Include:
+   - Description of the vulnerability
+   - Steps to reproduce
+   - Potential impact
+   - Any suggested fixes
 
-Include the following information:
+We will:
+- Acknowledge receipt within 48 hours
+- Provide a preliminary assessment within 5 business days
+- Keep you informed of progress
+- Credit you in the security advisory (unless you prefer anonymity)
 
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Any known workarounds
+## Security Best Practices
 
-We will acknowledge receipt within 48 hours and provide a status update
-within 5 business days.
-
-## Security Model
-
-SHARDEX is a code mirroring/shattering/forging pipeline with the following security properties:
-
-1. **L0/L1 stdlib-only** — Mirror and shatter paths use only Python standard library
-2. **L2/L3 require Node + puppeteer + Chrome** — Explicitly documented non-pip dependencies
-3. **No network access in L0/L1** — Mirror/shatter do not make network requests
-4. **Browser sandbox** — Forge runs in browser's own JavaScript with no external references
-5. **No arbitrary code execution** — Does not eval or execute untrusted code from mirrored codebases
-
-## Disclosure Policy
-
-We follow coordinated disclosure. Once a vulnerability is confirmed and a
-fix is available, we will:
-
-1. Release a patch
-2. Publish a security advisory
-3. Credit the reporter (unless they request anonymity)
+- Keep dependencies updated
+- Use `pip-audit` or `safety` to check for known vulnerabilities
+- Enable 2FA on your GitHub account
+- Never commit secrets or API keys
 
 ## Scope
 
-This policy covers the SHARDEX pipeline: `shardex.py`, `ops.py`, `meshscene.py`,
-`transubstantiate.py`, `third_impl.py`, `rank.py`, and the forged `flame.html`.
+This security policy applies to:
+- The shardex package on PyPI
+- The GitHub repository at github.com/myzticalbabe/shardex
+- All official distributions

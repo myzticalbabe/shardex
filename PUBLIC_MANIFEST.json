@@ -1,0 +1,67 @@
+{
+  "project": "shardex",
+  "version": "0.1.0",
+  "description": "Shardex — Shard Execution Engine extracted from AZAZAEL",
+  "repository": "https://github.com/myzticalbabe/shardex",
+  "license": "CDDL-1.1",
+  "authors": [
+    {
+      "name": "Azazael Contributors",
+      "email": "maintainers@shardex.dev",
+      "url": "https://github.com/myzticalbabe"
+    }
+  ],
+  "keywords": [
+    "shard",
+    "execution",
+    "engine",
+    "parallel",
+    "python"
+  ],
+  "classifiers": [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Common Development and Distribution License 1.1 (CDDL-1.1)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Programming Language :: Python :: 3.16",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Distributed Computing"
+  ],
+  "python_requires": ">=3.10",
+  "dependencies": [],
+  "optional_dependencies": {
+    "dev": [
+      "pytest>=7.0",
+      "pytest-cov>=4.0",
+      "pytest-xdist>=3.0",
+      "black>=23.0",
+      "ruff>=0.1.0",
+      "mypy>=1.0"
+    ],
+    "docs": [
+      "sphinx>=6.0",
+      "sphinx-rtd-theme>=1.0"
+    ]
+  },
+  "entry_points": {
+    "console_scripts": [
+      "shardex=shardex.cli:main"
+    ]
+  },
+  "urls": {
+    "Homepage": "https://github.com/myzticalbabe/shardex",
+    "Repository": "https://github.com/myzticalbabe/shardex",
+    "Issues": "https://github.com/myzticalbabe/shardex/issues",
+    "Documentation": "https://github.com/myzticalbabe/shardex/docs",
+    "Changelog": "https://github.com/myzticalbabe/shardex/blob/main/CHANGELOG.md",
+    "Security": "https://github.com/myzticalbabe/shardex/security/policy"
+  },
+  "manifest_version": 1,
+  "generated_at": "2026-11-18T00:00:00Z"
+}

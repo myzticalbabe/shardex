@@ -1,25 +1,42 @@
-## What changed
+# Pull Request Template
 
-<!-- One or two sentences. Link the issue this closes, if any. -->
+## Description
+<!-- Describe what this PR does -->
 
-## Why
+## Type of Change
+<!-- Check all that apply -->
+- [ ] Bug fix (non-breaking change fixing an issue)
+- [ ] New feature (non-breaking change adding functionality)
+- [ ] Breaking change (fix or feature causing existing functionality to change)
+- [ ] Documentation update
+- [ ] Refactoring (no functional changes)
+- [ ] Test improvement
+- [ ] CI/CD improvement
 
-<!-- The problem this solves. "Because the linter said so" is not a reason. -->
+## Related Issues
+<!-- Link to related issues -->
+Fixes #
 
-## How it was checked
+## Testing
+<!-- Describe how you tested this change -->
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Manual testing performed
+- [ ] Tested on free-threaded Python (3.14t/3.15t/3.16t)
 
-<!-- The commands you ran, and their result. "Not run" is an acceptable answer if explained. -->
+## Checklist
+<!-- Check all that apply -->
+- [ ] Code follows project coding conventions
+- [ ] Self-review completed
+- [ ] Docstrings added/updated for public APIs
+- [ ] Type hints added/updated
+- [ ] CHANGELOG.md updated
+- [ ] No new warnings from linters (ruff, mypy)
+- [ ] Tests added for new functionality
+- [ ] Breaking changes documented and version bumped
 
-## Checks
+## Screenshots / Logs
+<!-- If applicable, add screenshots or relevant logs -->
 
-- [ ] The change is focused; unrelated cleanup is in a separate pull request
-- [ ] Existing checks pass (or the failure is explained above)
-- [ ] New behaviour is covered by a test, or the reason it is not is stated
-- [ ] Documentation is updated if behaviour or usage changed
-
-## If this touches learner-facing content
-
-- [ ] Keyboard-navigable, with visible focus
-- [ ] Every image or canvas has a text alternative
-- [ ] New terms are defined the first time they appear
-- [ ] Reading level suits the intended age group
+## Additional Context
+<!-- Any other information, configuration, or data that might be necessary to review this PR -->

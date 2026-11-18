@@ -1,11 +1,68 @@
-blank_issues_enabled: false
-contact_links:
-  - name: Getting help
-    url: https://github.com/myzticalbabe/shardex/blob/HEAD/SUPPORT.md
-    about: Where to ask questions, and what to include.
-  - name: Running this in a classroom or club
-    url: https://github.com/myzticalbabe/shardex/blob/HEAD/STEM.md
-    about: Session plan, prerequisites and vocabulary for educators.
-  - name: Report a security vulnerability
-    url: https://github.com/myzticalbabe/shardex/security/advisories/new
-    about: Please report security problems privately, never in a public issue.
+name: Config Issue
+description: Report a configuration issue or request a config option
+title: "[CONFIG] "
+labels: ["config", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for configuration-related issues.
+
+  - type: dropdown
+    id: config-type
+    attributes:
+      label: Config Type
+      options:
+        - "Missing configuration option"
+        - "Incorrect default value"
+        - "Config file not found/parsed"
+        - "Environment variable not working"
+        - "Documentation unclear"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the configuration issue
+      placeholder: What config option is missing/broken?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      placeholder: What should the config do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      placeholder: What happens instead?
+    validations:
+      required: true
+
+  - type: input
+    id: config-file
+    attributes:
+      label: Config File
+      description: Which config file (if any)?
+      placeholder: "shardex.toml / .shardexrc / environment variables"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I've checked the documentation for this config option
+          required: true
+        - label: This isn't a duplicate of an existing config issue
+          required: true

@@ -1,46 +1,76 @@
-name: Feature request
-description: Suggest a capability, an improvement or an exercise
-title: "[feature] "
-labels: ["enhancement"]
+name: Feature Request
+description: Suggest a new feature for Shardex
+title: "[FEATURE] "
+labels: ["feature", "triage"]
+assignees: []
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the suggestion. The most useful requests describe the problem, not
-        only the solution.
+        Thanks for suggesting a feature! Please describe your idea below.
+
   - type: textarea
     id: problem
     attributes:
-      label: What problem does this solve?
-      description: Describe the situation you are in, and what makes it hard today.
+      label: Problem Statement
+      description: What problem does this feature solve?
+      placeholder: I'm frustrated when...
     validations:
       required: true
+
   - type: textarea
-    id: proposal
+    id: solution
     attributes:
-      label: What would you like to happen?
+      label: Proposed Solution
+      description: Describe the feature you'd like
+      placeholder: I'd like to see...
     validations:
       required: true
+
   - type: textarea
     id: alternatives
     attributes:
-      label: What have you tried instead?
-      description: Workarounds, other tools, and why they were not enough.
+      label: Alternatives Considered
+      description: Other solutions you've considered
+      placeholder: I also thought about...
+    validations:
+      required: false
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use Cases
+      description: Specific scenarios where this would be useful
+      placeholder: |
+        1. When processing large shards...
+        2. For parallel execution...
+    validations:
+      required: false
+
   - type: dropdown
-    id: area
+    id: component
     attributes:
-      label: Which area does this touch?
+      label: Component
+      description: Which part of Shardex does this affect?
       options:
-        - Documentation or exercises
-        - Command line behaviour
-        - Library or API
-        - Packaging and installation
-        - Accessibility
-        - Something else
+        - "Core shard execution"
+        - "Registry/dependency resolution"
+        - "CLI interface"
+        - "Parallel execution/WorkStealingPool"
+        - "Documentation"
+        - "Testing infrastructure"
+        - "Other"
+    validations:
+      required: true
+
   - type: checkboxes
-    id: checks
+    id: checklist
     attributes:
-      label: Before submitting
+      label: Checklist
       options:
-        - label: I searched the existing issues for the same request
+        - label: This feature aligns with Shardex's scope (shard execution engine)
+          required: true
+        - label: I'm willing to implement this or help with implementation
+          required: false
+        - label: This doesn't introduce breaking changes without version bump
           required: true
