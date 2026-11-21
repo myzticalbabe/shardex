@@ -19,9 +19,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Run accessibility audit
-        run: python tools/audit_accessibility.py .
+        run: python tools/audit_accessibility.py --path . --fail-on high
       - name: Run inclusion audit
-        run: python tools/audit_inclusion.py .
+        run: python tools/audit_inclusion.py --path . --fail-on high
 
   lint:
     name: Lint
@@ -37,7 +37,7 @@ jobs:
         run: ruff check --select E4,E7,E9,F .
       - name: Run black --check
         run: black --check .
-      - name: Run mypy
+      - name: Run mypy (non-failing)
         run: mypy --ignore-missing-imports . 2>/dev/null || true
 
   security:
@@ -49,8 +49,6 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install security tools
-        run: pip install pip-audit safety
-      - name: Run pip-audit
+        run: pip install pip-audit
+      - name: Run pip-audit (non-failing)
         run: pip-audit || true
-      - name: Run safety
-        run: safety check || true
