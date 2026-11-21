@@ -1,4 +1,4 @@
-# CI Workflow for Shardex
+# CI Workflow for Extracted Azazael Repo (metadata + audit scripts)
 
 name: CI
 
@@ -10,100 +10,47 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
-        include:
-            # Free-threaded builds. "3.16"/"3.16t" are not published by
-            # actions/setup-python (manifest tops out at 3.15.x), so asking
-            # for them fails the whole matrix entry at setup.
-            - python-version: "3.14t"
-              os: ubuntu-latest
-            - python-version: "3.15t"
-              os: ubuntu-latest
-      fail-fast: false
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
-
-      - name: Install dependencies
-        shell: bash
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]" pytest-timeout 2>/dev/null || pip install -e . pytest-timeout 2>/dev/null || true
-
-      - name: Run tests
-        shell: bash
-        run: |
-          python -m pytest -q --tb=short -r f --timeout=120 2>/dev/null || true
-
-      - name: Verify governance
-        shell: bash
-        run: |
-          python tools/verify_public_standards.py . || true
-
-  lint:
+  audit:
+    name: Audit Scripts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
+      - name: Run accessibility audit
+        run: python tools/audit_accessibility.py .
+      - name: Run inclusion audit
+        run: python tools/audit_inclusion.py .
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Install linting tools
         run: pip install ruff black mypy
-      - name: Run ruff
-        # Pinned rule set, not bare defaults: ruff expands its default select
-        # upstream (0.14 -> 0.17 added ~1200 findings here with zero code
-        # changes). E4/E7/E9/F is the historical gate: syntax and undefined
-        # names. build/ holds committed codegen copies, not source.
-        run: ruff check --select E4,E7,E9,F --exclude build .
+      - name: Run ruff (syntax + undefined names only)
+        run: ruff check --select E4,E7,E9,F .
       - name: Run black --check
         run: black --check .
       - name: Run mypy
         run: mypy --ignore-missing-imports . 2>/dev/null || true
 
   security:
+    name: Security
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
       - name: Install security tools
         run: pip install pip-audit safety
       - name: Run pip-audit
         run: pip-audit || true
       - name: Run safety
         run: safety check || true
-
-  build:
-    runs-on: ubuntu-latest
-    needs: [test, lint, security]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
-      - name: Build package
-        run: |
-          pip install build
-          python -m build
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
