@@ -1,9 +1,9 @@
 {
   "project": "shardex",
   "version": "0.1.0",
-  "description": "Shardex — Shard Execution Engine extracted from AZAZAEL",
+  "description": "Shardex \u2014 Shard Execution Engine extracted from AZAZAEL",
   "repository": "https://github.com/myzticalbabe/shardex",
-  "license": "CDDL-1.1",
+  "license": "LicenseRef-SoulForge-1.0",
   "authors": [
     {
       "name": "Azazael Contributors",
