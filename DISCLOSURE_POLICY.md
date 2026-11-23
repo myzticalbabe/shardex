@@ -8,7 +8,7 @@ This document outlines the disclosure policy for the Shardex project, governing 
 
 The following information is considered public and may be freely shared:
 
-- Source code (MIT/CDDL licensed)
+- Source code (Soul Forge License v1.0, LicenseRef-SoulForge-1.0 — SOUL LICENCE ONLY)
 - Documentation and README files
 - Release notes and changelogs
 - Public issue discussions (excluding security issues)

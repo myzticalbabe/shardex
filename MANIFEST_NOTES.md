@@ -96,7 +96,7 @@ cyclonedx-bom -o shardex-bom.json .
 ### Compliance Manifest
 
 #### Licenses
-- **Primary**: CDDL-1.1 (Common Development and Distribution License v1.1)
+- **Primary**: Soul Forge License v1.0 (LicenseRef-SoulForge-1.0) — SOUL LICENCE ONLY
 - **Third-party**: MIT, BSD-3-Clause, PSF-2.0 (stdlib)
 
 #### Standards Compliance
